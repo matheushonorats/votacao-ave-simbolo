@@ -18,7 +18,7 @@
   <!-- Top Announcement Bar -->
   <aside class="top-bar">
     <div class="container top-bar__content">
-      <span class="badge-status">Votação Oficial Aberta</span>
+      <span class="badge-status" id="headerStatusBadge">Votação Oficial Aberta</span>
       <span class="top-bar__info">Secretaria de Turismo &bull; Prefeitura de São Sebastião</span>
     </div>
   </aside>
@@ -33,14 +33,26 @@
       <p class="hero__subtitle">
         Conheça as seis espécies candidatas que representam a extraordinária biodiversidade da nossa Mata Atlântica e do litoral caiçara. Leia a história de cada ave e confirme o seu voto.
       </p>
-      <div class="hero__rules-badge">
-        <span>Regra de votação: 1 voto por cidadão (validação por e-mail)</span>
-      </div>
     </div>
   </header>
 
-  <!-- Main Section: Bird Selection Grid -->
+  <!-- Main Section -->
   <main class="container main-content">
+
+    <!-- Cinematic Carousel / Ken Burns Showcase Banner -->
+    <section class="showcase-section" aria-label="Apresentação das Espécies">
+      <div class="showcase-slider" id="showcaseSlider">
+        <!-- Slides inseridos dinamicamente via app.js -->
+      </div>
+      <div class="showcase-controls">
+        <button class="showcase-arrow showcase-arrow--prev" id="showcasePrev" aria-label="Ave anterior">&#10094;</button>
+        <div class="showcase-dots" id="showcaseDots"></div>
+        <button class="showcase-arrow showcase-arrow--next" id="showcaseNext" aria-label="Próxima ave">&#10095;</button>
+      </div>
+      <div class="showcase-progress-bar" id="showcaseProgressBar"></div>
+    </section>
+
+    <!-- Section Header for Grid -->
     <section class="section-header">
       <h2 class="section-title">Espécies Candidatas</h2>
       <p class="section-subtitle">Clique em <strong>Conhecer a espécie</strong> para ver detalhes completos ou em <strong>Votar nesta ave</strong> para selecioná-la.</p>
@@ -53,7 +65,7 @@
 
     <!-- Voter Confirmation Section -->
     <section class="voting-section" id="votingSection">
-      <div class="voting-card">
+      <div class="voting-card" id="votingCard">
         <div class="voting-card__header">
           <h3 class="voting-card__title">Confirmação do Voto</h3>
           <p class="voting-card__desc">Verifique a espécie selecionada e informe o seu e-mail para validar o seu voto.</p>
@@ -90,6 +102,13 @@
           </div>
         </form>
       </div>
+
+      <!-- Mensagem quando a votação estiver encerrada -->
+      <div class="voting-closed-card" id="votingClosedCard" style="display:none;">
+        <h3 class="voting-closed-title">Votação Encerrada</h3>
+        <p class="voting-closed-desc">O período de votação oficial para a escolha da Ave Símbolo de São Sebastião foi finalizado. Agradecemos a expressiva participação de toda a comunidade!</p>
+        <p class="voting-closed-sub">O resultado oficial será anunciado durante a programação do Festival de Observação de Aves Entre Asas.</p>
+      </div>
     </section>
   </main>
 
@@ -111,9 +130,7 @@
 
         <div class="modal-text-content">
           <h4 class="modal-section-title">Por que votar nesta espécie?</h4>
-          <div class="modal-description" id="modalDescription">
-            <!-- Descrição completa inserida via JavaScript -->
-          </div>
+          <div class="modal-description" id="modalDescription"></div>
         </div>
 
         <footer class="modal-footer">
@@ -137,9 +154,7 @@
         <p class="success-message" id="successMessageText">
           O seu voto para a eleição da Ave Símbolo de São Sebastião foi gravado oficialmente no sistema.
         </p>
-        <div class="success-bird-card" id="successBirdCard">
-          <!-- Resumo da ave votada -->
-        </div>
+        <div class="success-bird-card" id="successBirdCard"></div>
         <p class="success-subtext">Agradecemos sua participação na valorização da nossa fauna e cultura caiçara.</p>
         <button type="button" class="btn btn-primary" id="btnSuccessClose">Concluir</button>
       </div>
@@ -149,12 +164,32 @@
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toastContainer" aria-live="polite"></div>
 
-  <!-- Footer -->
+  <!-- Institutional Footer with High-Contrast Logos -->
   <footer class="footer">
     <div class="container footer__container">
+      
+      <!-- Institutional Logos Showcase Box -->
+      <div class="footer-logos-card">
+        <div class="footer-logos-block">
+          <h4 class="footer-logos-title">Realização &bull; Governo Municipal</h4>
+          <div class="footer-logos-img-wrap">
+            <img src="assets/logos-governo.png" alt="SETUR Secretaria de Turismo e Governo Municipal de São Sebastião" class="footer-logo-img">
+          </div>
+        </div>
+
+        <div class="footer-logos-divider"></div>
+
+        <div class="footer-logos-block">
+          <h4 class="footer-logos-title">Apoio &bull; Parceiros Institucionais</h4>
+          <div class="footer-logos-img-wrap">
+            <img src="assets/logos-parceiros.png" alt="Parceiros Institucionais: TOVS, COA SS, Suinã, Instituto Verdescola, SAVE Brasil, Projeto Regeneração e Parque Estadual da Serra do Mar" class="footer-logo-img">
+          </div>
+        </div>
+      </div>
+
       <div class="footer__text">
         <p><strong>Festival de Observação de Aves Entre Asas</strong> &bull; Edição São Sebastião-SP</p>
-        <p class="footer__meta">Realização: Secretaria de Turismo de São Sebastião &bull; Preservação e Educação Ambiental</p>
+        <p class="footer__meta">Secretaria de Turismo de São Sebastião &bull; Preservação, Educação Ambiental e Ecoturismo</p>
       </div>
     </div>
   </footer>

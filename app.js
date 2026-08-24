@@ -1,19 +1,24 @@
 /**
  * VOTAÇÃO AVE SÍMBOLO DE SÃO SEBASTIÃO — FESTIVAL ENTRE ASAS
- * Lógica do cliente, dados das espécies e integração com Google Apps Script.
+ * Lógica do cliente, dados das espécies, showcase cinematográfico e integração.
  */
 
 // ============================================================
-// CONFIGURAÇÃO DO ENDPOINT (GOOGLE APPS SCRIPT WEB APP)
+// CONFIGURAÇÕES GERAIS E GERENCIAMENTO DA VOTAÇÃO
 // ============================================================
-// Substitua pela URL da implantação do Web App após publicar o backend
+// Para gerenciar a votação:
+// 1. WEB_APP_URL: Insira a URL da sua implantação do Google Apps Script
+// 2. STATUS_VOTACAO: Altere para 'ENCERRADA' quando desejar finalizar o recebimento de votos
 const CONFIG = {
-  WEB_APP_URL: '', // Ex: 'https://script.google.com/macros/s/AKfycb.../exec'
+  WEB_APP_URL: '', 
+  STATUS_VOTACAO: 'ABERTA', // 'ABERTA' ou 'ENCERRADA'
   STORAGE_KEY_VOTE: 'setur_ave_simbolo_voto_registrado',
+  SHOWCASE_INTERVAL_MS: 7000, // Tempo de permanência de cada ave no banner (7 segundos)
 };
 
 // ============================================================
-// DADOS OFICIAIS DAS AVES CANDIDATAS
+// DADOS OFICIAIS DAS AVES CANDIDATAS (TEXTOS E FOTOS)
+// Para alterar qualquer texto, nome ou imagem, edite este array:
 // ============================================================
 const BIRDS_DATA = [
   {
@@ -113,16 +118,39 @@ const BIRDS_DATA = [
 // ============================================================
 let selectedBirdId = null;
 let userIpAddress = '';
+let currentSlideIndex = 0;
+let showcaseTimer = null;
+let showcaseProgressTimer = null;
+let isShowcasePaused = false;
 
 // ============================================================
 // INICIALIZAÇÃO
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
+  applyVotingStatus();
+  initShowcaseSlider();
   renderBirdsGrid();
   initEventListeners();
   fetchUserIp();
   checkExistingVote();
 });
+
+// Aplica o status de votação (Aberta vs Encerrada)
+function applyVotingStatus() {
+  const isClosed = CONFIG.STATUS_VOTACAO === 'ENCERRADA';
+  const badge = document.getElementById('headerStatusBadge');
+  const votingCard = document.getElementById('votingCard');
+  const closedCard = document.getElementById('votingClosedCard');
+
+  if (isClosed) {
+    if (badge) {
+      badge.textContent = 'Votação Encerrada';
+      badge.classList.add('badge-status--closed');
+    }
+    if (votingCard) votingCard.style.display = 'none';
+    if (closedCard) closedCard.style.display = 'block';
+  }
+}
 
 // Captura de IP para auditoria
 function fetchUserIp() {
@@ -134,19 +162,127 @@ function fetchUserIp() {
 
 // Verifica se o navegador atual já registrou voto localmente
 function checkExistingVote() {
+  if (CONFIG.STATUS_VOTACAO === 'ENCERRADA') return;
+
   try {
     const saved = localStorage.getItem(CONFIG.STORAGE_KEY_VOTE);
     if (saved) {
       const data = JSON.parse(saved);
       const btn = document.getElementById('btnSubmitVote');
       const emailInput = document.getElementById('voterEmail');
-      emailInput.value = data.email || '';
-      emailInput.disabled = true;
-      btn.disabled = true;
-      btn.textContent = 'Voto já Registrado neste Dispositivo';
+      if (emailInput) {
+        emailInput.value = data.email || '';
+        emailInput.disabled = true;
+      }
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Voto já Registrado neste Dispositivo';
+      }
       showToast('Identificamos um voto já computado com este dispositivo para a espécie: ' + data.birdName, 'info');
     }
   } catch (e) {}
+}
+
+// ============================================================
+// SHOWCASE CAROUSEL (KEN BURNS BANNER)
+// ============================================================
+function initShowcaseSlider() {
+  const slider = document.getElementById('showcaseSlider');
+  const dotsContainer = document.getElementById('showcaseDots');
+  if (!slider || !dotsContainer) return;
+
+  // Monta slides
+  slider.innerHTML = BIRDS_DATA.map((bird, idx) => `
+    <div class="showcase-slide ${idx === 0 ? 'is-active' : ''}" data-index="${idx}">
+      <div class="showcase-img-wrap">
+        <img src="${bird.image}" alt="${bird.name}" class="showcase-img">
+      </div>
+      <div class="showcase-overlay">
+        <div class="showcase-content">
+          <span class="showcase-tag">${bird.tag}</span>
+          <h3 class="showcase-title">${bird.name}</h3>
+          <p class="showcase-scientific">${bird.scientific}</p>
+          <p class="showcase-text">${bird.excerpt}</p>
+          <div class="showcase-actions">
+            <button type="button" class="showcase-btn-info" onclick="openBirdModal('${bird.id}')">Conhecer a espécie</button>
+            <button type="button" class="showcase-btn-vote" onclick="selectBird('${bird.id}', true)">Votar nesta ave</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  // Monta indicadores
+  dotsContainer.innerHTML = BIRDS_DATA.map((_, idx) => `
+    <span class="showcase-dot ${idx === 0 ? 'is-active' : ''}" data-index="${idx}" onclick="goToSlide(${idx})"></span>
+  `).join('');
+
+  // Botões de navegação
+  document.getElementById('showcasePrev')?.addEventListener('click', () => {
+    prevSlide();
+    resetShowcaseTimer();
+  });
+  document.getElementById('showcaseNext')?.addEventListener('click', () => {
+    nextSlide();
+    resetShowcaseTimer();
+  });
+
+  // Pausa ao passar o mouse
+  const section = document.querySelector('.showcase-section');
+  section?.addEventListener('mouseenter', () => { isShowcasePaused = true; });
+  section?.addEventListener('mouseleave', () => { isShowcasePaused = false; });
+
+  startShowcaseTimer();
+}
+
+function goToSlide(index) {
+  currentSlideIndex = (index + BIRDS_DATA.length) % BIRDS_DATA.length;
+
+  document.querySelectorAll('.showcase-slide').forEach((slide, idx) => {
+    slide.classList.toggle('is-active', idx === currentSlideIndex);
+  });
+
+  document.querySelectorAll('.showcase-dot').forEach((dot, idx) => {
+    dot.classList.toggle('is-active', idx === currentSlideIndex);
+  });
+
+  restartProgressBar();
+}
+
+function nextSlide() {
+  goToSlide(currentSlideIndex + 1);
+}
+
+function prevSlide() {
+  goToSlide(currentSlideIndex - 1);
+}
+
+function startShowcaseTimer() {
+  restartProgressBar();
+  clearInterval(showcaseTimer);
+  showcaseTimer = setInterval(() => {
+    if (!isShowcasePaused) {
+      nextSlide();
+    }
+  }, CONFIG.SHOWCASE_INTERVAL_MS);
+}
+
+function resetShowcaseTimer() {
+  clearInterval(showcaseTimer);
+  startShowcaseTimer();
+}
+
+function restartProgressBar() {
+  const bar = document.getElementById('showcaseProgressBar');
+  if (!bar) return;
+
+  bar.style.transition = 'none';
+  bar.style.width = '0%';
+
+  setTimeout(() => {
+    bar.style.transition = `width ${CONFIG.SHOWCASE_INTERVAL_MS}ms linear`;
+    bar.style.width = '100%';
+  }, 50);
 }
 
 // ============================================================
@@ -222,6 +358,11 @@ function initEventListeners() {
 // SELEÇÃO DA AVE
 // ============================================================
 function selectBird(birdId, scrollToVote = false) {
+  if (CONFIG.STATUS_VOTACAO === 'ENCERRADA') {
+    showToast('A votação oficial está encerrada.', 'info');
+    return;
+  }
+
   const bird = BIRDS_DATA.find(b => b.id === birdId);
   if (!bird) return;
 
@@ -256,7 +397,6 @@ function selectBird(birdId, scrollToVote = false) {
     const section = document.getElementById('votingSection');
     if (section) {
       section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      // Foca no campo de e-mail após a rolagem suave
       setTimeout(() => {
         document.getElementById('voterEmail')?.focus();
       }, 500);
@@ -276,6 +416,7 @@ function openBirdModal(birdId) {
   if (!bird) return;
 
   activeModalBirdId = birdId;
+  isShowcasePaused = true;
 
   document.getElementById('modalImg').src = bird.image;
   document.getElementById('modalImg').alt = `${bird.name} - ${bird.scientific}`;
@@ -296,6 +437,7 @@ function closeBirdModal() {
   modal?.setAttribute('aria-hidden', 'true');
   document.body.style.overflow = '';
   activeModalBirdId = null;
+  isShowcasePaused = false;
 }
 
 // ============================================================
@@ -356,6 +498,8 @@ function validateEmailInput() {
 }
 
 function updateSubmitButtonState() {
+  if (CONFIG.STATUS_VOTACAO === 'ENCERRADA') return;
+
   const btn = document.getElementById('btnSubmitVote');
   const emailInput = document.getElementById('voterEmail');
   const isEmailValid = validateEmail(emailInput.value.trim());
@@ -371,6 +515,11 @@ function updateSubmitButtonState() {
 // ============================================================
 async function handleVoteSubmit(e) {
   e.preventDefault();
+
+  if (CONFIG.STATUS_VOTACAO === 'ENCERRADA') {
+    showToast('A votação oficial está encerrada.', 'info');
+    return;
+  }
 
   if (!selectedBirdId) {
     showToast('Por favor, selecione uma ave antes de confirmar seu voto.', 'error');
@@ -389,7 +538,6 @@ async function handleVoteSubmit(e) {
   const bird = BIRDS_DATA.find(b => b.id === selectedBirdId);
   const btn = document.getElementById('btnSubmitVote');
   
-  // Estado de carregamento
   btn.disabled = true;
   btn.classList.add('is-loading');
 
@@ -405,21 +553,17 @@ async function handleVoteSubmit(e) {
   };
 
   try {
-    // Se a URL do Web App do Apps Script estiver configurada, envia via POST
     if (CONFIG.WEB_APP_URL && CONFIG.WEB_APP_URL.startsWith('http')) {
-      const response = await fetch(CONFIG.WEB_APP_URL, {
+      await fetch(CONFIG.WEB_APP_URL, {
         method: 'POST',
-        mode: 'no-cors', // Apps Script standard CORS handling
+        mode: 'no-cors',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      // Em modo no-cors o fetch é bem-sucedido se a requisição alcançar o Apps Script
     } else {
-      // Simulação para desenvolvimento local caso o Apps Script ainda não esteja implantado
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await new Promise(resolve => setTimeout(resolve, 700));
     }
 
-    // Salva o registro localmente para evitar duplo voto pelo mesmo navegador
     try {
       localStorage.setItem(CONFIG.STORAGE_KEY_VOTE, JSON.stringify({
         email: email,
@@ -432,7 +576,6 @@ async function handleVoteSubmit(e) {
     btn.classList.remove('is-loading');
     openSuccessModal(bird, email);
 
-    // Desabilita o formulário após a confirmação
     emailInput.disabled = true;
     btn.textContent = 'Voto Registrado';
 
