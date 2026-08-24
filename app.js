@@ -11,7 +11,7 @@ const CONFIG = {
 
 const ASSETS_BASE = 'https://raw.githubusercontent.com/matheushonorats/votacao-ave-simbolo/main/assets';
 
-const BIRDS_DATA = [
+let BIRDS_DATA = [
   {
     id: 'beija-flor-rajado',
     name: 'Beija-flor-rajado',
@@ -117,7 +117,21 @@ let showcaseTimer = null;
 let isShowcasePaused = false;
 let _lastSentHeight = 0;
 
+/**
+ * Algoritmo Fisher-Yates para embaralhar a ordem das opções de forma perfeitamente uniforme
+ */
+function shuffleBirds(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  // Embaralha as aves a cada carregamento da página
+  shuffleBirds(BIRDS_DATA);
+
   applyVotingStatus();
   initShowcaseSlider();
   renderBirdsGrid();
@@ -573,11 +587,10 @@ function resetFormForNextVote() {
   selectedBirdId = null;
   hideInlineAlert();
 
-  document.querySelectorAll('.bird-card').forEach(card => {
-    card.classList.remove('is-selected');
-    const voteBtn = card.querySelector('.bird-card__btn-vote');
-    if (voteBtn) voteBtn.textContent = 'Votar';
-  });
+  // Opcional: re-embaralha para a próxima pessoa que for votar no mesmo tablet
+  shuffleBirds(BIRDS_DATA);
+  renderBirdsGrid();
+  initShowcaseSlider();
 
   const preview = document.getElementById('selectedBirdPreview');
   if (preview) {
@@ -709,7 +722,6 @@ async function handleVoteSubmit(e) {
         } else {
           btn.disabled = false;
           const errMsg = res.error || 'Não foi possível computar o seu voto.';
-          // Exibe tanto o modal central em destaque quanto o alerta inline no campo
           openAlertModal('Voto Não Registrado', errMsg);
           showInlineAlert('Atenção: Voto não computado', errMsg);
         }
