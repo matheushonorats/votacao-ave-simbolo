@@ -9,11 +9,11 @@ const CONFIG = {
   SHOWCASE_INTERVAL_MS: 7000,
 };
 
-// URL base das imagens hospedadas no repositório GitHub
+// URL base das imagens hospedadas no repositório GitHub (Carregamento rápido via CDN)
 const ASSETS_BASE = 'https://raw.githubusercontent.com/matheushonorats/votacao-ave-simbolo/main/assets';
 
 // ============================================================
-// DADOS OFICIAIS DAS AVES CANDIDATAS (TEXTOS E FOTOS)
+// DADOS OFICIAIS DAS AVES CANDIDATAS (COM ENQUADRAMENTO / FOCAL POINT)
 // ============================================================
 const BIRDS_DATA = [
   {
@@ -21,6 +21,7 @@ const BIRDS_DATA = [
     name: 'Beija-flor-rajado',
     scientific: 'Ramphodon naevius',
     image: `${ASSETS_BASE}/beija-flor-rajado.jpg`,
+    focalPoint: 'center 35%',
     category: 'Mata Atlântica',
     tag: 'Maior Beija-flor da Região',
     excerpt: 'Endêmico da Mata Atlântica e o maior beija-flor do bioma, frequenta desde quintais e praças até florestas preservadas.',
@@ -36,6 +37,7 @@ const BIRDS_DATA = [
     name: 'Surucuá-de-barriga-amarela',
     scientific: 'Trogon viridis',
     image: `${ASSETS_BASE}/surucua-de-barriga-amarela.jpg`,
+    focalPoint: 'center 30%',
     category: 'Mata Atlântica',
     tag: 'Floresta Preservada · Cores Vivas',
     excerpt: 'Ave de beleza exuberante com ventre amarelo-ouro e cabeça azul-escuro, muito admirada por observadores de todo o país.',
@@ -51,6 +53,7 @@ const BIRDS_DATA = [
     name: 'Pintadinho',
     scientific: 'Drymophila squamata',
     image: `${ASSETS_BASE}/pintadinho.jpg`,
+    focalPoint: 'center 45%',
     category: 'Mata Atlântica',
     tag: 'Endêmico · Sub-bosque Nativo',
     excerpt: 'Pequena e encantadora ave endêmica com plumagem ricamente pontilhada em preto e branco, habitante típica dos bambuzais.',
@@ -66,6 +69,7 @@ const BIRDS_DATA = [
     name: 'Tucano-de-bico-preto',
     scientific: 'Ramphastos vitellinus',
     image: `${ASSETS_BASE}/tucano-de-bico-preto.jpg`,
+    focalPoint: 'center 25%',
     category: 'Mata Atlântica',
     tag: 'Dispersor de Sementes · Ícone Natural',
     excerpt: 'Com bico esculpido e peito amarelo-alaranjado, é um dos mais carismáticos semeadores da floresta atlântica costeira.',
@@ -81,6 +85,7 @@ const BIRDS_DATA = [
     name: 'Garça-branca-grande',
     scientific: 'Ardea alba',
     image: `${ASSETS_BASE}/garca-branca-grande.jpg`,
+    focalPoint: 'center 18%',
     category: 'Litoral e Manguezal',
     tag: 'Ambientes Costeiros · Cultura Caiçara',
     excerpt: 'Elegante e majestosa, intimamente ligada aos manguezais, rios, orla marítima e ao cotidiano dos pescadores caiçaras.',
@@ -96,6 +101,7 @@ const BIRDS_DATA = [
     name: 'Jaó-do-sul',
     scientific: 'Crypturellus noctivagus',
     image: `${ASSETS_BASE}/jao-do-sul.jpg`,
+    focalPoint: 'center 45%',
     category: 'Mata Atlântica',
     tag: 'Mata Primária · Canto Inconfundível',
     excerpt: 'Ave florestal discreta de canto melancólico inconfundível, símbolo vivo da preservação das matas primárias de São Sebastião.',
@@ -116,6 +122,7 @@ let userIpAddress = '';
 let currentSlideIndex = 0;
 let showcaseTimer = null;
 let isShowcasePaused = false;
+let _lastSentHeight = 0;
 
 // ============================================================
 // INICIALIZAÇÃO
@@ -128,7 +135,22 @@ document.addEventListener('DOMContentLoaded', () => {
   fetchUserIp();
   checkExistingVote();
   initSpreadsheetStatusSync();
+
+  setInterval(sendIframeHeight, 500);
+  window.addEventListener('resize', sendIframeHeight);
 });
+
+function sendIframeHeight() {
+  try {
+    if (window.parent && window.parent !== window) {
+      const h = document.body ? document.body.scrollHeight : 0;
+      if (h > 0 && Math.abs(h - _lastSentHeight) > 5) {
+        _lastSentHeight = h;
+        window.parent.postMessage({ votacaoAveSimbolo: true, height: h }, '*');
+      }
+    }
+  } catch (e) {}
+}
 
 function initSpreadsheetStatusSync() {
   if (typeof google !== 'undefined' && google.script && google.script.run) {
@@ -206,7 +228,7 @@ function initShowcaseSlider() {
   slider.innerHTML = BIRDS_DATA.map((bird, idx) => `
     <div class="showcase-slide ${idx === 0 ? 'is-active' : ''}" data-index="${idx}">
       <div class="showcase-img-wrap">
-        <img src="${bird.image}" alt="${bird.name}" class="showcase-img">
+        <img src="${bird.image}" alt="${bird.name}" class="showcase-img" style="object-position: ${bird.focalPoint || 'center center'};">
       </div>
       <div class="showcase-overlay">
         <div class="showcase-content">
@@ -294,7 +316,7 @@ function restartProgressBar() {
 }
 
 // ============================================================
-// RENDERIZAÇÃO DO GRID DE AVES
+// RENDERIZAÇÃO DO GRID DE AVES (COM ENQUADRAMENTO PRECISO)
 // ============================================================
 function renderBirdsGrid() {
   const container = document.getElementById('birdsGrid');
@@ -303,7 +325,7 @@ function renderBirdsGrid() {
   container.innerHTML = BIRDS_DATA.map(bird => `
     <article class="bird-card" id="card-${bird.id}" data-bird-id="${bird.id}">
       <div class="bird-card__media">
-        <img src="${bird.image}" alt="${bird.name} - ${bird.scientific}" class="bird-card__img" loading="lazy">
+        <img src="${bird.image}" alt="${bird.name} - ${bird.scientific}" class="bird-card__img" style="object-position: ${bird.focalPoint || 'center center'};" loading="lazy">
         <span class="bird-card__tag">${bird.tag}</span>
         <span class="bird-card__selected-badge">Selecionada</span>
       </div>
@@ -382,7 +404,7 @@ function selectBird(birdId, scrollToVote = false) {
   if (preview) {
     preview.innerHTML = `
       <div class="selected-bird-item">
-        <img src="${bird.image}" alt="${bird.name}" class="selected-bird-item__img">
+        <img src="${bird.image}" alt="${bird.name}" class="selected-bird-item__img" style="object-position: ${bird.focalPoint || 'center center'};">
         <div class="selected-bird-item__info">
           <div class="selected-bird-item__title">${bird.name}</div>
           <div class="selected-bird-item__sub">${bird.scientific}</div>
@@ -419,8 +441,11 @@ function openBirdModal(birdId) {
   activeModalBirdId = birdId;
   isShowcasePaused = true;
 
-  document.getElementById('modalImg').src = bird.image;
-  document.getElementById('modalImg').alt = `${bird.name} - ${bird.scientific}`;
+  const modalImg = document.getElementById('modalImg');
+  modalImg.src = bird.image;
+  modalImg.alt = `${bird.name} - ${bird.scientific}`;
+  modalImg.style.objectPosition = bird.focalPoint || 'center center';
+
   document.getElementById('modalCategory').textContent = bird.category;
   document.getElementById('modalTitle').textContent = bird.name;
   document.getElementById('modalScientific').textContent = bird.scientific;
@@ -512,7 +537,7 @@ function updateSubmitButtonState() {
 }
 
 // ============================================================
-// SUBMISSÃO DO VOTO
+// SUBMISSÃO DO VOTO COM GOOGLE APPS SCRIPT
 // ============================================================
 async function handleVoteSubmit(e) {
   e.preventDefault();
@@ -551,7 +576,6 @@ async function handleVoteSubmit(e) {
     userIp: userIpAddress
   };
 
-  // Integração com Google Apps Script
   if (typeof google !== 'undefined' && google.script && google.script.run) {
     google.script.run
       .withSuccessHandler((res) => {
@@ -580,7 +604,6 @@ async function handleVoteSubmit(e) {
       })
       .computarVoto(payload);
   } else {
-    // Simulação caso não esteja dentro do Google Apps Script
     setTimeout(() => {
       btn.classList.remove('is-loading');
       openSuccessModal(bird, email);

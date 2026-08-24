@@ -1,6 +1,6 @@
 /**
  * VOTAÇÃO AVE SÍMBOLO DE SÃO SEBASTIÃO — FESTIVAL ENTRE ASAS
- * Backend Google Apps Script (Web App para Google Planilhas)
+ * Backend Google Apps Script com proteção de concorrência LockService.
  */
 
 const CONFIG = {
@@ -10,7 +10,7 @@ const CONFIG = {
 };
 
 /**
- * Ponto de entrada HTTP GET — Renderiza o Web App (Permite incorporação iframe)
+ * Ponto de entrada HTTP GET — Renderiza o Web App
  */
 function doGet(e) {
   return HtmlService.createTemplateFromFile('index')
@@ -28,7 +28,7 @@ function include(filename) {
 }
 
 /**
- * Retorna o status atual da votação (lido da aba de configurações da planilha)
+ * Retorna o status atual da votação
  */
 function obterStatusVotacao() {
   try {
@@ -48,10 +48,15 @@ function obterStatusVotacao() {
 }
 
 /**
- * Registra o voto na planilha com validação de unicidade por e-mail
+ * Registra o voto com proteção de concorrência (LockService) para milhares de acessos simultâneos
  */
 function computarVoto(payload) {
+  const lock = LockService.getScriptLock();
+  
   try {
+    // Aguarda até 30 segundos para obter a trava de escrita exclusiva
+    lock.waitLock(30000);
+
     const statusObj = obterStatusVotacao();
     if (statusObj.status === 'ENCERRADA') {
       return { ok: false, error: 'A votação oficial já foi encerrada.', codigo: 'VOTACAO_ENCERRADA' };
@@ -75,7 +80,7 @@ function computarVoto(payload) {
       abaVotos = ss.getSheetByName(CONFIG.ABA_VOTOS);
     }
 
-    // ── Verificação de Voto Único por E-mail ────────────────────
+    // ── Verificação de Voto Único por E-mail (Thread-Safe) ─────
     const ultimaLinha = abaVotos.getLastRow();
     if (ultimaLinha > 1) {
       const emailsCadastrados = abaVotos.getRange(2, 2, ultimaLinha - 1, 1).getValues().map(r => String(r[0]).trim().toLowerCase());
@@ -103,6 +108,9 @@ function computarVoto(payload) {
       ok: false,
       error: 'Erro no processamento do voto: ' + err.message
     };
+  } finally {
+    // Libera a trava para o próximo votante na fila
+    try { lock.releaseLock(); } catch(e) {}
   }
 }
 
@@ -110,7 +118,6 @@ function computarVoto(payload) {
  * Cria automaticamente as abas com estrutura visual padrão
  */
 function _inicializarPlanilha(ss) {
-  // Aba de Votos
   let abaVotos = ss.getSheetByName(CONFIG.ABA_VOTOS);
   if (!abaVotos) {
     abaVotos = ss.insertSheet(CONFIG.ABA_VOTOS);
@@ -119,7 +126,6 @@ function _inicializarPlanilha(ss) {
     abaVotos.setFrozenRows(1);
   }
 
-  // Aba de Configuração
   let abaConfig = ss.getSheetByName(CONFIG.ABA_CONFIG);
   if (!abaConfig) {
     abaConfig = ss.insertSheet(CONFIG.ABA_CONFIG);

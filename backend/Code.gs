@@ -1,23 +1,52 @@
 /**
  * VOTAÇÃO AVE SÍMBOLO — FESTIVAL ENTRE ASAS (SÃO SEBASTIÃO/SP)
- * Backend Google Apps Script para registro direto no Google Sheets.
+ * Backend Google Apps Script com proteção de concorrência LockService.
  */
 
 const CONFIG = {
   ABA_VOTOS: 'Votos_Ave_Simbolo',
+  ABA_CONFIG: 'Configuracoes',
   TIMEZONE: 'America/Sao_Paulo',
 };
 
-/**
- * Ponto de entrada POST (Recepção dos Votos)
- */
-function doPost(e) {
+function doGet(e) {
+  return HtmlService.createTemplateFromFile('index')
+    .evaluate()
+    .setTitle('Votação Ave Símbolo — Festival Entre Asas')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1.0')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
+function obterStatusVotacao() {
   try {
-    let payload = {};
-    if (e && e.postData && e.postData.contents) {
-      payload = JSON.parse(e.postData.contents);
-    } else if (e && e.parameter) {
-      payload = e.parameter;
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let abaConfig = ss.getSheetByName(CONFIG.ABA_CONFIG);
+
+    if (!abaConfig) {
+      _inicializarPlanilha(ss);
+      return { status: 'ABERTA' };
+    }
+
+    const valor = String(abaConfig.getRange('B2').getValue() || 'ABERTA').trim().toUpperCase();
+    return { status: valor === 'ENCERRADA' ? 'ENCERRADA' : 'ABERTA' };
+  } catch (err) {
+    return { status: 'ABERTA' };
+  }
+}
+
+function computarVoto(payload) {
+  const lock = LockService.getScriptLock();
+  
+  try {
+    lock.waitLock(30000);
+
+    const statusObj = obterStatusVotacao();
+    if (statusObj.status === 'ENCERRADA') {
+      return { ok: false, error: 'A votação oficial já foi encerrada.', codigo: 'VOTACAO_ENCERRADA' };
     }
 
     const email = String(payload.email || '').trim().toLowerCase();
@@ -27,86 +56,64 @@ function doPost(e) {
     const userAgent = String(payload.userAgent || '').substring(0, 300);
 
     if (!email || !birdName) {
-      return _json({ ok: false, error: 'E-mail ou ave não informados.' });
+      return { ok: false, error: 'E-mail ou ave não informados.' };
     }
 
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    let aba = ss.getSheetByName(CONFIG.ABA_VOTOS);
+    let abaVotos = ss.getSheetByName(CONFIG.ABA_VOTOS);
 
-    // Cria a aba caso ainda não exista
-    if (!aba) {
-      aba = ss.insertSheet(CONFIG.ABA_VOTOS);
-      aba.appendRow(['Data/Hora', 'E-mail', 'Ave Votada', 'Nome Científico', 'IP', 'Dispositivo']);
-      aba.getRange(1, 1, 1, 6).setFontWeight('bold').setBackground('#16423c').setFontColor('#ffffff');
-      aba.setFrozenRows(1);
+    if (!abaVotos) {
+      _inicializarPlanilha(ss);
+      abaVotos = ss.getSheetByName(CONFIG.ABA_VOTOS);
     }
 
-    // ── Verificação de Voto Único por E-mail ────────────────────
-    const ultimaLinha = aba.getLastRow();
+    const ultimaLinha = abaVotos.getLastRow();
     if (ultimaLinha > 1) {
-      const emailsCadastrados = aba.getRange(2, 2, ultimaLinha - 1, 1).getValues().map(r => String(r[0]).trim().toLowerCase());
+      const emailsCadastrados = abaVotos.getRange(2, 2, ultimaLinha - 1, 1).getValues().map(r => String(r[0]).trim().toLowerCase());
       if (emailsCadastrados.includes(email)) {
-        return _json({
+        return {
           ok: false,
           error: 'Este e-mail já registrou um voto anteriormente.',
           codigo: 'VOTO_DUPLICADO'
-        });
+        };
       }
     }
 
-    // ── Gravação do Voto ───────────────────────────────────────
     const timestamp = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "yyyy-MM-dd HH:mm:ss");
-    aba.appendRow([timestamp, email, birdName, scientificName, userIp, userAgent]);
+    abaVotos.appendRow([timestamp, email, birdName, scientificName, userIp, userAgent]);
     SpreadsheetApp.flush();
 
-    return _json({
+    return {
       ok: true,
-      message: 'Voto computado com sucesso para a espécie: ' + birdName
-    });
+      message: 'Voto registrado com sucesso para a espécie: ' + birdName
+    };
 
   } catch (err) {
-    return _json({
+    return {
       ok: false,
       error: 'Erro no processamento do voto: ' + err.message
-    });
+    };
+  } finally {
+    try { lock.releaseLock(); } catch(e) {}
   }
 }
 
-/**
- * Ponto de entrada GET (Estatísticas e Ranking da Votação)
- */
-function doGet(e) {
-  try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const aba = ss.getSheetByName(CONFIG.ABA_VOTOS);
-
-    if (!aba || aba.getLastRow() <= 1) {
-      return _json({ totalVotos: 0, ranking: [] });
-    }
-
-    const dados = aba.getRange(2, 3, aba.getLastRow() - 1, 1).getValues();
-    const contagem = {};
-
-    dados.forEach(r => {
-      const ave = String(r[0]).trim();
-      if (ave) contagem[ave] = (contagem[ave] || 0) + 1;
-    });
-
-    const ranking = Object.keys(contagem)
-      .map(ave => ({ ave: ave, votos: contagem[ave] }))
-      .sort((a, b) => b.votos - a.votos);
-
-    return _json({
-      totalVotos: dados.length,
-      ranking: ranking
-    });
-
-  } catch (err) {
-    return _json({ error: err.message });
+function _inicializarPlanilha(ss) {
+  let abaVotos = ss.getSheetByName(CONFIG.ABA_VOTOS);
+  if (!abaVotos) {
+    abaVotos = ss.insertSheet(CONFIG.ABA_VOTOS);
+    abaVotos.appendRow(['Data/Hora', 'E-mail', 'Ave Votada', 'Nome Científico', 'IP', 'Dispositivo']);
+    abaVotos.getRange(1, 1, 1, 6).setFontWeight('bold').setBackground('#16423c').setFontColor('#ffffff');
+    abaVotos.setFrozenRows(1);
   }
-}
 
-function _json(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
+  let abaConfig = ss.getSheetByName(CONFIG.ABA_CONFIG);
+  if (!abaConfig) {
+    abaConfig = ss.insertSheet(CONFIG.ABA_CONFIG);
+    abaConfig.appendRow(['Parâmetro', 'Valor', 'Descrição']);
+    abaConfig.getRange(1, 1, 1, 3).setFontWeight('bold').setBackground('#0e2a38').setFontColor('#ffffff');
+    abaConfig.appendRow(['Status da Votação', 'ABERTA', 'Altere para ENCERRADA quando desejar finalizar o recebimento de votos.']);
+    abaConfig.setFrozenRows(1);
+    abaConfig.autoResizeColumns(1, 3);
+  }
 }
