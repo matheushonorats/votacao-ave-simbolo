@@ -51,21 +51,23 @@
     <!-- Section Header for Grid -->
     <section class="section-header">
       <h2 class="section-title">Espécies Candidatas</h2>
-      <p class="section-subtitle">Clique em <strong>Conhecer</strong> para ver detalhes completos ou em <strong>Votar</strong> para selecioná-la.</p>
+      <p class="section-subtitle">Clique em <strong>Conhecer</strong> para expandir os detalhes da ave ou em <strong>Votar</strong> para selecioná-la.</p>
     </section>
 
-    <!-- Grid of Birds -->
+    <!-- Grid of Birds (Cards com expansão inline dos detalhes) -->
     <div class="birds-grid" id="birdsGrid"></div>
 
     <!-- Voter Confirmation Section -->
     <section class="voting-section" id="votingSection">
+      
+      <!-- Card do Formulário de Voto -->
       <div class="voting-card" id="votingCard">
         <div class="voting-card__header">
           <h3 class="voting-card__title">Confirmação do Voto</h3>
           <p class="voting-card__desc">Verifique a espécie selecionada e informe o seu e-mail para validar o seu voto.</p>
         </div>
 
-        <!-- Banner de Alerta Inline de Erro / Duplicidade -->
+        <!-- Banner de Alerta Inline de Erro / Duplicidade (100% Visível no Campo de Visão) -->
         <div class="form-alert-banner" id="formAlertBanner" style="display: none;" role="alert">
           <div class="form-alert-banner__icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -75,7 +77,7 @@
             </svg>
           </div>
           <div class="form-alert-banner__content">
-            <strong class="form-alert-banner__title" id="formAlertTitle">Aviso Importante</strong>
+            <strong class="form-alert-banner__title" id="formAlertTitle">Atenção: Voto não computado</strong>
             <p class="form-alert-banner__text" id="formAlertText"></p>
           </div>
         </div>
@@ -112,92 +114,32 @@
         </form>
       </div>
 
-      <!-- Mensagem quando a votação estiver encerrada -->
-      <div class="voting-closed-card" id="votingClosedCard" style="display:none;">
-        <h3 class="voting-closed-title">Votação Encerrada</h3>
-        <p class="voting-closed-desc">O período de votação oficial para a escolha da Ave Símbolo de São Sebastião foi finalizado. Agradecemos a expressiva participação de toda a comunidade!</p>
-        <p class="voting-closed-sub">O resultado oficial será anunciado durante a programação do Festival de Observação de Aves Entre Asas.</p>
-      </div>
-    </section>
-  </main>
-
-  <!-- Detail Modal for Bird Information -->
-  <div class="modal-overlay" id="birdModal" aria-hidden="true" role="dialog" aria-modal="true">
-    <div class="modal-card">
-      <button class="modal-close" id="modalCloseBtn" aria-label="Fechar detalhes">&times;</button>
-      
-      <div class="modal-media">
-        <img src="" alt="" class="modal-image" id="modalImg">
-        <span class="modal-badge" id="modalCategory">Mata Atlântica</span>
-      </div>
-
-      <div class="modal-body">
-        <header class="modal-header">
-          <h3 class="modal-title" id="modalTitle">Nome da Ave</h3>
-          <p class="modal-scientific" id="modalScientific">Nome Científico</p>
-        </header>
-
-        <div class="modal-text-content">
-          <h4 class="modal-section-title">Por que votar nesta espécie?</h4>
-          <div class="modal-description" id="modalDescription"></div>
-        </div>
-
-        <footer class="modal-footer">
-          <button type="button" class="btn btn-secondary" id="modalCloseAction">Fechar</button>
-          <button type="button" class="btn btn-primary" id="modalSelectAction">Escolher e Votar Nesta Ave</button>
-        </footer>
-      </div>
-    </div>
-  </div>
-
-  <!-- Success Modal -->
-  <div class="modal-overlay" id="successModal" aria-hidden="true" role="dialog" aria-modal="true">
-    <div class="modal-card modal-card--success">
-      <div class="success-content">
+      <!-- Card de Sucesso Inline (Aparece exatamente no lugar do formulário, sem modais fora de vista) -->
+      <div class="voting-success-card" id="votingSuccessCard" style="display: none;">
         <div class="success-icon-wrap">
           <svg class="success-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M20 6L9 17l-5-5"/>
           </svg>
         </div>
         <h3 class="success-title">Voto Registrado com Sucesso!</h3>
-        <p class="success-message" id="successMessageText">
+        <p class="success-message">
           O seu voto para a eleição da Ave Símbolo de São Sebastião foi gravado oficialmente no sistema.
         </p>
         <div class="success-bird-card" id="successBirdCard"></div>
         <p class="success-subtext">Agradecemos sua participação na valorização da nossa fauna e cultura caiçara.</p>
-        <div class="modal-footer" style="margin-top:16px; border:none; padding:0; gap:10px;">
+        <div class="success-actions">
           <button type="button" class="btn btn-primary" id="btnNewVoteAction">Registrar Próximo Voto</button>
-          <button type="button" class="btn btn-secondary" id="btnSuccessClose">Concluir</button>
         </div>
       </div>
-    </div>
-  </div>
 
-  <!-- Alert / Warning Modal (Para Voto Já Registrado ou Erros em Alto Destaque) -->
-  <div class="modal-overlay" id="alertModal" aria-hidden="true" role="dialog" aria-modal="true">
-    <div class="modal-card modal-card--alert">
-      <div class="alert-modal-content">
-        <div class="alert-icon-wrap">
-          <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-          </svg>
-        </div>
-        <h3 class="alert-modal-title" id="alertModalTitle">Aviso de Votação</h3>
-        <p class="alert-modal-message" id="alertModalMessage">
-          Identificamos uma restrição no registro do voto.
-        </p>
-        <div class="alert-modal-detail" id="alertModalDetail" style="display:none;"></div>
-        <div class="modal-footer" style="margin-top:20px; border:none; padding:0;">
-          <button type="button" class="btn btn-primary" id="btnAlertModalClose">Entendido / Informar Outro E-mail</button>
-        </div>
+      <!-- Mensagem quando a votação estiver encerrada -->
+      <div class="voting-closed-card" id="votingClosedCard" style="display: none;">
+        <h3 class="voting-closed-title">Votação Encerrada</h3>
+        <p class="voting-closed-desc">O período de votação oficial para a escolha da Ave Símbolo de São Sebastião foi finalizado. Agradecemos a expressiva participação de toda a comunidade!</p>
+        <p class="voting-closed-sub">O resultado oficial será anunciado durante a programação do Festival de Observação de Aves Entre Asas.</p>
       </div>
-    </div>
-  </div>
-
-  <!-- Toast Notification Container -->
-  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+    </section>
+  </main>
 
   <!-- Institutional Footer with High-Contrast Logos Only -->
   <footer class="footer">

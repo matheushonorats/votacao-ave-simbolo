@@ -1,7 +1,7 @@
 <script>
 /**
  * VOTAÇÃO AVE SÍMBOLO DE SÃO SEBASTIÃO — FESTIVAL ENTRE ASAS
- * Lógica do cliente, dados das espécies, showcase cinematográfico e integração.
+ * Lógica 100% Inline — Sem modais popup que saem do campo de visão em iframes.
  */
 
 const CONFIG = {
@@ -227,7 +227,7 @@ function initShowcaseSlider() {
             <span class="showcase-scientific">${bird.scientific}</span>
           </div>
           <div class="showcase-actions">
-            <button type="button" class="showcase-btn-info" onclick="openBirdModal('${bird.id}')">Conhecer a espécie</button>
+            <button type="button" class="showcase-btn-info" onclick="showcaseExpandBird('${bird.id}')">Conhecer a espécie</button>
             <button type="button" class="showcase-btn-vote" onclick="selectBird('${bird.id}', true)">Votar nesta ave</button>
           </div>
         </div>
@@ -311,7 +311,7 @@ function restartProgressBar() {
 }
 
 // ============================================================
-// RENDERIZAÇÃO DO GRID DE AVES
+// RENDERIZAÇÃO DO GRID DE AVES COM EXPANSÃO INLINE
 // ============================================================
 function renderBirdsGrid() {
   const container = document.getElementById('birdsGrid');
@@ -329,8 +329,22 @@ function renderBirdsGrid() {
         <p class="bird-card__scientific">${bird.scientific}</p>
         <p class="bird-card__excerpt">${bird.excerpt}</p>
         <div class="bird-card__actions">
-          <button type="button" class="bird-card__btn-info" onclick="openBirdModal('${bird.id}')">Conhecer</button>
-          <button type="button" class="bird-card__btn-vote" onclick="selectBird('${bird.id}', true)">Votar</button>
+          <button type="button" class="bird-card__btn-info" id="btnInfo-${bird.id}" onclick="toggleBirdDetails('${bird.id}')">
+            <span>Conhecer</span>
+          </button>
+          <button type="button" class="bird-card__btn-vote" id="btnVote-${bird.id}" onclick="selectBird('${bird.id}', true)">Votar</button>
+        </div>
+      </div>
+      
+      <!-- Drawer de Detalhes Inline (100% no campo de visão) -->
+      <div class="bird-card__details-drawer" id="drawer-${bird.id}">
+        <h4 class="bird-card__details-title">Por que votar nesta espécie?</h4>
+        <div class="bird-card__details-content">
+          ${bird.description}
+        </div>
+        <div class="bird-card__details-actions">
+          <button type="button" class="btn btn-secondary" onclick="toggleBirdDetails('${bird.id}')">Recolher</button>
+          <button type="button" class="btn btn-primary" onclick="selectBird('${bird.id}', true)">Escolher esta Ave</button>
         </div>
       </div>
     </article>
@@ -338,51 +352,58 @@ function renderBirdsGrid() {
 }
 
 // ============================================================
+// EXPANSÃO INLINE DOS DETALHES DA AVE
+// ============================================================
+function toggleBirdDetails(birdId) {
+  const card = document.getElementById(`card-${birdId}`);
+  if (!card) return;
+
+  const isExpanded = card.classList.contains('is-expanded');
+
+  // Fecha qualquer outro card expandido para manter a interface limpa
+  document.querySelectorAll('.bird-card.is-expanded').forEach(c => {
+    if (c.id !== `card-${birdId}`) {
+      c.classList.remove('is-expanded');
+      const infoBtn = c.querySelector('.bird-card__btn-info span');
+      if (infoBtn) infoBtn.textContent = 'Conhecer';
+    }
+  });
+
+  // Alterna o estado do card clicado
+  card.classList.toggle('is-expanded', !isExpanded);
+  const infoBtn = card.querySelector('.bird-card__btn-info span');
+  if (infoBtn) {
+    infoBtn.textContent = !isExpanded ? 'Recolher' : 'Conhecer';
+  }
+
+  // Notifica o iframe para recalcular altura
+  setTimeout(sendIframeHeight, 100);
+
+  if (!isExpanded) {
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+function showcaseExpandBird(birdId) {
+  const card = document.getElementById(`card-${birdId}`);
+  if (!card) return;
+
+  // Garante que o card esteja expandido
+  if (!card.classList.contains('is-expanded')) {
+    toggleBirdDetails(birdId);
+  }
+
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const rect = card.getBoundingClientRect();
+  notifyParentToScroll((window.pageYOffset || document.documentElement.scrollTop || 0) + rect.top - 20);
+}
+
+// ============================================================
 // EVENTOS E INTERAÇÃO
 // ============================================================
 function initEventListeners() {
-  document.getElementById('modalCloseBtn')?.addEventListener('click', closeBirdModal);
-  document.getElementById('modalCloseAction')?.addEventListener('click', closeBirdModal);
-  document.getElementById('modalSelectAction')?.addEventListener('click', () => {
-    if (activeModalBirdId) {
-      selectBird(activeModalBirdId, true);
-      closeBirdModal();
-    }
-  });
-
-  document.getElementById('birdModal')?.addEventListener('click', (e) => {
-    if (e.target.id === 'birdModal') closeBirdModal();
-  });
-  document.getElementById('successModal')?.addEventListener('click', (e) => {
-    if (e.target.id === 'successModal') closeSuccessModal();
-  });
-  document.getElementById('alertModal')?.addEventListener('click', (e) => {
-    if (e.target.id === 'alertModal') closeAlertModal();
-  });
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      closeBirdModal();
-      closeSuccessModal();
-      closeAlertModal();
-    }
-  });
-
-  document.getElementById('btnSuccessClose')?.addEventListener('click', () => {
-    closeSuccessModal();
-    resetFormForNextVote();
-  });
   document.getElementById('btnNewVoteAction')?.addEventListener('click', () => {
-    closeSuccessModal();
     resetFormForNextVote();
-  });
-  document.getElementById('btnAlertModalClose')?.addEventListener('click', () => {
-    closeAlertModal();
-    const emailInput = document.getElementById('voterEmail');
-    if (emailInput) {
-      emailInput.value = '';
-      emailInput.focus();
-    }
   });
 
   const emailInput = document.getElementById('voterEmail');
@@ -400,7 +421,7 @@ function initEventListeners() {
 // ============================================================
 function selectBird(birdId, scrollToVote = false) {
   if (CONFIG.STATUS_VOTACAO === 'ENCERRADA') {
-    openAlertModal('Votação Encerrada', 'A votação oficial está encerrada.');
+    showInlineAlert('Votação Encerrada', 'A votação oficial está encerrada.');
     return;
   }
 
@@ -442,150 +463,14 @@ function selectBird(birdId, scrollToVote = false) {
 
       setTimeout(() => {
         document.getElementById('voterEmail')?.focus();
-      }, 500);
+      }, 400);
     }
   }
 }
 
 // ============================================================
-// POSICIONAMENTO DINÂMICO DE MODAL NO CAMPO DE VISÃO
+// BANNER DE ALERTA INLINE
 // ============================================================
-function positionModalInCurrentView(modalElement, targetElement) {
-  if (!modalElement) return;
-
-  let scrollY = 0;
-  if (targetElement) {
-    const rect = targetElement.getBoundingClientRect();
-    scrollY = (window.pageYOffset || document.documentElement.scrollTop || 0) + rect.top - 20;
-  } else {
-    scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
-  }
-
-  modalElement.style.top = Math.max(0, scrollY) + 'px';
-  modalElement.style.position = 'absolute';
-}
-
-// ============================================================
-// MODAL DE DETALHES DA ESPÉCIE
-// ============================================================
-let activeModalBirdId = null;
-
-function openBirdModal(birdId) {
-  const bird = BIRDS_DATA.find(b => b.id === birdId);
-  if (!bird) return;
-
-  activeModalBirdId = birdId;
-  isShowcasePaused = true;
-
-  const modalImg = document.getElementById('modalImg');
-  modalImg.src = bird.image;
-  modalImg.alt = `${bird.name} - ${bird.scientific}`;
-  modalImg.style.objectPosition = bird.focalPoint || 'center center';
-
-  document.getElementById('modalCategory').textContent = bird.category;
-  document.getElementById('modalTitle').textContent = bird.name;
-  document.getElementById('modalScientific').textContent = bird.scientific;
-  document.getElementById('modalDescription').innerHTML = bird.description;
-
-  const modal = document.getElementById('birdModal');
-  const cardElement = document.getElementById(`card-${birdId}`);
-  
-  positionModalInCurrentView(modal, cardElement);
-
-  modal?.classList.add('is-open');
-  modal?.setAttribute('aria-hidden', 'false');
-
-  const modalCard = modal.querySelector('.modal-card');
-  if (modalCard) modalCard.scrollTop = 0;
-
-  if (cardElement) {
-    const rect = cardElement.getBoundingClientRect();
-    const targetScrollY = (window.pageYOffset || document.documentElement.scrollTop || 0) + rect.top - 40;
-    notifyParentToScroll(targetScrollY);
-    modal.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-}
-
-function closeBirdModal() {
-  const modal = document.getElementById('birdModal');
-  modal?.classList.remove('is-open');
-  modal?.setAttribute('aria-hidden', 'true');
-  activeModalBirdId = null;
-  isShowcasePaused = false;
-}
-
-// ============================================================
-// MODAL DE SUCESSO
-// ============================================================
-function openSuccessModal(bird, email) {
-  const birdCard = document.getElementById('successBirdCard');
-  if (birdCard && bird) {
-    birdCard.innerHTML = `
-      <strong>${bird.name}</strong> (<em>${bird.scientific}</em>)<br>
-      <span style="font-size:0.8125rem;color:var(--color-text-muted);">Confirmado para o e-mail: ${email}</span>
-    `;
-  }
-  const modal = document.getElementById('successModal');
-  const votingSection = document.getElementById('votingSection');
-
-  positionModalInCurrentView(modal, votingSection);
-
-  modal?.classList.add('is-open');
-  modal?.setAttribute('aria-hidden', 'false');
-
-  if (votingSection) {
-    votingSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    const rect = votingSection.getBoundingClientRect();
-    notifyParentToScroll((window.pageYOffset || document.documentElement.scrollTop || 0) + rect.top);
-  }
-}
-
-function closeSuccessModal() {
-  const modal = document.getElementById('successModal');
-  modal?.classList.remove('is-open');
-  modal?.setAttribute('aria-hidden', 'true');
-}
-
-// ============================================================
-// MODAL & BANNER DE ALERTA EM ALTO DESTAQUE
-// ============================================================
-function openAlertModal(title, message, detailText = '') {
-  const modal = document.getElementById('alertModal');
-  const titleEl = document.getElementById('alertModalTitle');
-  const msgEl = document.getElementById('alertModalMessage');
-  const detailEl = document.getElementById('alertModalDetail');
-
-  if (titleEl) titleEl.textContent = title;
-  if (msgEl) msgEl.textContent = message;
-
-  if (detailEl) {
-    if (detailText) {
-      detailEl.textContent = detailText;
-      detailEl.style.display = 'block';
-    } else {
-      detailEl.style.display = 'none';
-    }
-  }
-
-  const votingSection = document.getElementById('votingSection');
-  positionModalInCurrentView(modal, votingSection);
-
-  modal?.classList.add('is-open');
-  modal?.setAttribute('aria-hidden', 'false');
-
-  if (votingSection) {
-    votingSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    const rect = votingSection.getBoundingClientRect();
-    notifyParentToScroll((window.pageYOffset || document.documentElement.scrollTop || 0) + rect.top);
-  }
-}
-
-function closeAlertModal() {
-  const modal = document.getElementById('alertModal');
-  modal?.classList.remove('is-open');
-  modal?.setAttribute('aria-hidden', 'true');
-}
-
 function showInlineAlert(title, text) {
   const banner = document.getElementById('formAlertBanner');
   const titleEl = document.getElementById('formAlertTitle');
@@ -611,6 +496,30 @@ function hideInlineAlert() {
   if (banner) banner.style.display = 'none';
 }
 
+// ============================================================
+// EXIBIÇÃO DO RESULTADO DO VOTO (INLINE)
+// ============================================================
+function showSuccessInline(bird, email) {
+  const votingCard = document.getElementById('votingCard');
+  const successCard = document.getElementById('votingSuccessCard');
+  const birdCard = document.getElementById('successBirdCard');
+
+  if (birdCard && bird) {
+    birdCard.innerHTML = `
+      <strong>${bird.name}</strong> (<em>${bird.scientific}</em>)<br>
+      <span style="font-size:0.8125rem;color:var(--color-text-muted);">Confirmado para o e-mail: ${email}</span>
+    `;
+  }
+
+  if (votingCard) votingCard.style.display = 'none';
+  if (successCard) {
+    successCard.style.display = 'block';
+    successCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  setTimeout(sendIframeHeight, 100);
+}
+
 function resetFormForNextVote() {
   selectedBirdId = null;
   hideInlineAlert();
@@ -618,6 +527,12 @@ function resetFormForNextVote() {
   shuffleBirds(BIRDS_DATA);
   renderBirdsGrid();
   initShowcaseSlider();
+
+  const votingCard = document.getElementById('votingCard');
+  const successCard = document.getElementById('votingSuccessCard');
+
+  if (successCard) successCard.style.display = 'none';
+  if (votingCard) votingCard.style.display = 'block';
 
   const preview = document.getElementById('selectedBirdPreview');
   if (preview) {
@@ -649,6 +564,13 @@ function resetFormForNextVote() {
     const btnText = btn.querySelector('.btn-text');
     if (btnText) btnText.textContent = 'Confirmar meu Voto';
   }
+
+  const votingSection = document.getElementById('votingSection');
+  if (votingSection) {
+    votingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  setTimeout(sendIframeHeight, 100);
 }
 
 // ============================================================
@@ -704,12 +626,12 @@ async function handleVoteSubmit(e) {
   e.preventDefault();
 
   if (CONFIG.STATUS_VOTACAO === 'ENCERRADA') {
-    openAlertModal('Votação Encerrada', 'O período oficial de votação foi finalizado.');
+    showInlineAlert('Votação Encerrada', 'O período oficial de votação foi finalizado.');
     return;
   }
 
   if (!selectedBirdId) {
-    openAlertModal('Nenhuma Ave Selecionada', 'Por favor, escolha uma das seis espécies candidatas acima antes de confirmar seu voto.');
+    showInlineAlert('Nenhuma Ave Selecionada', 'Por favor, escolha uma das seis espécies candidatas acima antes de confirmar seu voto.');
     return;
   }
 
@@ -743,25 +665,23 @@ async function handleVoteSubmit(e) {
       .withSuccessHandler((res) => {
         btn.classList.remove('is-loading');
         if (res && res.ok) {
-          openSuccessModal(bird, email);
+          showSuccessInline(bird, email);
         } else {
           btn.disabled = false;
           const errMsg = res.error || 'Não foi possível computar o seu voto.';
-          openAlertModal('Voto Não Registrado', errMsg);
           showInlineAlert('Atenção: Voto não computado', errMsg);
         }
       })
       .withFailureHandler((err) => {
         btn.classList.remove('is-loading');
         btn.disabled = false;
-        openAlertModal('Falha de Comunicação', 'Ocorreu um erro ao conectar com o servidor: ' + err.message);
         showInlineAlert('Erro de Conexão', err.message);
       })
       .computarVoto(payload);
   } else {
     setTimeout(() => {
       btn.classList.remove('is-loading');
-      openSuccessModal(bird, email);
+      showSuccessInline(bird, email);
     }, 600);
   }
 }
