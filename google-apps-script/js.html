@@ -118,9 +118,6 @@ let showcaseTimer = null;
 let isShowcasePaused = false;
 let _lastSentHeight = 0;
 
-/**
- * Algoritmo Fisher-Yates para embaralhar a ordem das opções de forma perfeitamente uniforme
- */
 function shuffleBirds(array) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -130,7 +127,6 @@ function shuffleBirds(array) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Embaralha as aves a cada carregamento da página
   shuffleBirds(BIRDS_DATA);
 
   applyVotingStatus();
@@ -404,7 +400,7 @@ function initEventListeners() {
 // ============================================================
 function selectBird(birdId, scrollToVote = false) {
   if (CONFIG.STATUS_VOTACAO === 'ENCERRADA') {
-    showToast('A votação oficial está encerrada.', 'info');
+    openAlertModal('Votação Encerrada', 'A votação oficial está encerrada.');
     return;
   }
 
@@ -439,9 +435,9 @@ function selectBird(birdId, scrollToVote = false) {
   if (scrollToVote) {
     const section = document.getElementById('votingSection');
     if (section) {
-      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      section.scrollIntoView({ behavior: 'smooth', block: 'center' });
       const rect = section.getBoundingClientRect();
-      const absoluteTop = window.scrollY + rect.top;
+      const absoluteTop = (window.pageYOffset || document.documentElement.scrollTop || 0) + rect.top;
       notifyParentToScroll(absoluteTop);
 
       setTimeout(() => {
@@ -449,8 +445,24 @@ function selectBird(birdId, scrollToVote = false) {
       }, 500);
     }
   }
+}
 
-  showToast(`Você selecionou: ${bird.name}`, 'info');
+// ============================================================
+// POSICIONAMENTO DINÂMICO DE MODAL NO CAMPO DE VISÃO
+// ============================================================
+function positionModalInCurrentView(modalElement, targetElement) {
+  if (!modalElement) return;
+
+  let scrollY = 0;
+  if (targetElement) {
+    const rect = targetElement.getBoundingClientRect();
+    scrollY = (window.pageYOffset || document.documentElement.scrollTop || 0) + rect.top - 20;
+  } else {
+    scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+  }
+
+  modalElement.style.top = Math.max(0, scrollY) + 'px';
+  modalElement.style.position = 'absolute';
 }
 
 // ============================================================
@@ -476,16 +488,19 @@ function openBirdModal(birdId) {
   document.getElementById('modalDescription').innerHTML = bird.description;
 
   const modal = document.getElementById('birdModal');
+  const cardElement = document.getElementById(`card-${birdId}`);
+  
+  positionModalInCurrentView(modal, cardElement);
+
   modal?.classList.add('is-open');
   modal?.setAttribute('aria-hidden', 'false');
 
   const modalCard = modal.querySelector('.modal-card');
   if (modalCard) modalCard.scrollTop = 0;
 
-  const cardElement = document.getElementById(`card-${birdId}`);
   if (cardElement) {
     const rect = cardElement.getBoundingClientRect();
-    const targetScrollY = window.scrollY + rect.top - 40;
+    const targetScrollY = (window.pageYOffset || document.documentElement.scrollTop || 0) + rect.top - 40;
     notifyParentToScroll(targetScrollY);
     modal.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
@@ -511,13 +526,17 @@ function openSuccessModal(bird, email) {
     `;
   }
   const modal = document.getElementById('successModal');
+  const votingSection = document.getElementById('votingSection');
+
+  positionModalInCurrentView(modal, votingSection);
+
   modal?.classList.add('is-open');
   modal?.setAttribute('aria-hidden', 'false');
 
-  const votingSection = document.getElementById('votingSection');
   if (votingSection) {
+    votingSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
     const rect = votingSection.getBoundingClientRect();
-    notifyParentToScroll(window.scrollY + rect.top);
+    notifyParentToScroll((window.pageYOffset || document.documentElement.scrollTop || 0) + rect.top);
   }
 }
 
@@ -528,7 +547,7 @@ function closeSuccessModal() {
 }
 
 // ============================================================
-// MODAL & BANNER DE ALERTA EM ALTO DESTAQUE (VOTO JÁ REGISTRADO / ERRO)
+// MODAL & BANNER DE ALERTA EM ALTO DESTAQUE
 // ============================================================
 function openAlertModal(title, message, detailText = '') {
   const modal = document.getElementById('alertModal');
@@ -548,13 +567,16 @@ function openAlertModal(title, message, detailText = '') {
     }
   }
 
+  const votingSection = document.getElementById('votingSection');
+  positionModalInCurrentView(modal, votingSection);
+
   modal?.classList.add('is-open');
   modal?.setAttribute('aria-hidden', 'false');
 
-  const votingSection = document.getElementById('votingSection');
   if (votingSection) {
+    votingSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
     const rect = votingSection.getBoundingClientRect();
-    notifyParentToScroll(window.scrollY + rect.top);
+    notifyParentToScroll((window.pageYOffset || document.documentElement.scrollTop || 0) + rect.top);
   }
 }
 
@@ -577,6 +599,11 @@ function showInlineAlert(title, text) {
   if (emailInput) {
     emailInput.classList.add('is-invalid');
   }
+
+  const votingSection = document.getElementById('votingSection');
+  if (votingSection) {
+    votingSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
 }
 
 function hideInlineAlert() {
@@ -588,7 +615,6 @@ function resetFormForNextVote() {
   selectedBirdId = null;
   hideInlineAlert();
 
-  // Re-embaralha para a próxima pessoa que for votar no mesmo tablet
   shuffleBirds(BIRDS_DATA);
   renderBirdsGrid();
   initShowcaseSlider();
@@ -623,8 +649,6 @@ function resetFormForNextVote() {
     const btnText = btn.querySelector('.btn-text');
     if (btnText) btnText.textContent = 'Confirmar meu Voto';
   }
-
-  showToast('Pronto para registrar o próximo voto!', 'info');
 }
 
 // ============================================================
@@ -740,23 +764,5 @@ async function handleVoteSubmit(e) {
       openSuccessModal(bird, email);
     }, 600);
   }
-}
-
-function showToast(message, type = 'info') {
-  const container = document.getElementById('toastContainer');
-  if (!container) return;
-
-  const toast = document.createElement('div');
-  toast.className = `toast toast--${type}`;
-  toast.textContent = message;
-
-  container.appendChild(toast);
-
-  setTimeout(() => {
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateY(10px)';
-    toast.style.transition = 'all 0.3s ease';
-    setTimeout(() => toast.remove(), 300);
-  }, 4000);
 }
 </script>
