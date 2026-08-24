@@ -5,8 +5,9 @@
  */
 
 const CONFIG = {
+  WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbyL9UkIQg9rMGb915-kHqlB8tAFJ6mV1QmFGNQefzu744EoSh0HGF2c1NgADCb9U8Xo/exec',
   STATUS_VOTACAO: 'ABERTA',
-  SHOWCASE_INTERVAL_MS: 7000,
+  SHOWCASE_INTERVAL_MS: 4500,
 };
 
 const ASSETS_BASE = 'https://raw.githubusercontent.com/matheushonorats/votacao-ave-simbolo/main/assets';
@@ -19,7 +20,7 @@ const BIRDS_DATA = [
     image: `${ASSETS_BASE}/beija-flor-rajado.jpg`,
     focalPoint: 'center 35%',
     category: 'Mata Atlântica',
-    tag: 'Maior Beija-flor da Região',
+    tag: 'Maior Beija-flor do Bioma',
     excerpt: 'Endêmico da Mata Atlântica e o maior beija-flor do bioma, frequenta desde quintais e praças até florestas preservadas.',
     description: `
       <p>O Beija-flor-rajado é uma espécie bastante presente em nossa região, podendo ser observado em diversos locais de São Sebastião, desde os quintais de nossas casas até praças, áreas verdes, bebedouros e áreas de Mata Atlântica preservada.</p>
@@ -35,7 +36,7 @@ const BIRDS_DATA = [
     image: `${ASSETS_BASE}/surucua-de-barriga-amarela.jpg`,
     focalPoint: 'center 30%',
     category: 'Mata Atlântica',
-    tag: 'Floresta Preservada · Cores Vivas',
+    tag: 'Cores Vivas da Mata',
     excerpt: 'Ave de beleza exuberante com ventre amarelo-ouro e cabeça azul-escuro, muito admirada por observadores de todo o país.',
     description: `
       <p>O Surucuá-de-barriga-amarela é uma das aves mais espetaculares e emblemáticas que habitam as matas de São Sebastião.</p>
@@ -51,7 +52,7 @@ const BIRDS_DATA = [
     image: `${ASSETS_BASE}/pintadinho.jpg`,
     focalPoint: 'center 45%',
     category: 'Mata Atlântica',
-    tag: 'Endêmico · Sub-bosque Nativo',
+    tag: 'Plumagem Única e Rara',
     excerpt: 'Pequena e encantadora ave endêmica com plumagem ricamente pontilhada em preto e branco, habitante típica dos bambuzais.',
     description: `
       <p>O Pintadinho é uma ave de pequeno porte, medindo cerca de 11 centímetros, com um padrão visual único composto por delicadas escamas e manchas pretas e brancas por todo o corpo.</p>
@@ -67,7 +68,7 @@ const BIRDS_DATA = [
     image: `${ASSETS_BASE}/tucano-de-bico-preto.jpg`,
     focalPoint: 'center 25%',
     category: 'Mata Atlântica',
-    tag: 'Dispersor de Sementes · Ícone Natural',
+    tag: 'Semeador da Floresta',
     excerpt: 'Com bico esculpido e peito amarelo-alaranjado, é um dos mais carismáticos semeadores da floresta atlântica costeira.',
     description: `
       <p>O Tucano-de-bico-preto é uma das espécies mais carismáticas, populares e fáceis de identificar em todo o litoral norte paulista.</p>
@@ -83,7 +84,7 @@ const BIRDS_DATA = [
     image: `${ASSETS_BASE}/garca-branca-grande.jpg`,
     focalPoint: 'center 18%',
     category: 'Litoral e Manguezal',
-    tag: 'Ambientes Costeiros · Cultura Caiçara',
+    tag: 'Símbolo da Costa Caiçara',
     excerpt: 'Elegante e majestosa, intimamente ligada aos manguezais, rios, orla marítima e ao cotidiano dos pescadores caiçaras.',
     description: `
       <p>A Garça-branca-grande é uma espécie bastante presente em nossa região e de fácil observação, principalmente em áreas próximas a rios, córregos, manguezais e ambientes costeiros. Também é comum encontrá-la nas proximidades de embarcações e áreas utilizadas por pescadores, características que reforçam sua relação com a cultura e o modo de vida caiçara.</p>
@@ -99,7 +100,7 @@ const BIRDS_DATA = [
     image: `${ASSETS_BASE}/jao-do-sul.jpg`,
     focalPoint: 'center 45%',
     category: 'Mata Atlântica',
-    tag: 'Mata Primária · Canto Inconfundível',
+    tag: 'Voz das Matas Preservadas',
     excerpt: 'Ave florestal discreta de canto melancólico inconfundível, símbolo vivo da preservação das matas primárias de São Sebastião.',
     description: `
       <p>O Jaó-do-sul é uma ave florestal de solo, pertencente à tradicional família dos tinamídeos (mesmo grupo do inhambu e da macuco).</p>
@@ -132,7 +133,10 @@ document.addEventListener('DOMContentLoaded', () => {
 function sendIframeHeight() {
   try {
     if (window.parent && window.parent !== window) {
-      const h = document.body ? document.body.scrollHeight : 0;
+      const h = Math.max(
+        document.body ? document.body.scrollHeight : 0,
+        document.documentElement ? document.documentElement.scrollHeight : 0
+      );
       if (h > 0 && Math.abs(h - _lastSentHeight) > 5) {
         _lastSentHeight = h;
         window.parent.postMessage({ votacaoAveSimbolo: true, height: h }, '*');
@@ -193,7 +197,7 @@ function fetchUserIp() {
 }
 
 // ============================================================
-// SHOWCASE CAROUSEL
+// SHOWCASE CAROUSEL (RÁPIDO, DISCRETO E DINÂMICO/ALEATÓRIO)
 // ============================================================
 function initShowcaseSlider() {
   const slider = document.getElementById('showcaseSlider');
@@ -208,9 +212,10 @@ function initShowcaseSlider() {
       <div class="showcase-overlay">
         <div class="showcase-content">
           <span class="showcase-tag">${bird.tag}</span>
-          <h3 class="showcase-title">${bird.name}</h3>
-          <p class="showcase-scientific">${bird.scientific}</p>
-          <p class="showcase-text">${bird.excerpt}</p>
+          <div class="showcase-header-row">
+            <h3 class="showcase-title">${bird.name}</h3>
+            <span class="showcase-scientific">${bird.scientific}</span>
+          </div>
           <div class="showcase-actions">
             <button type="button" class="showcase-btn-info" onclick="openBirdModal('${bird.id}')">Conhecer a espécie</button>
             <button type="button" class="showcase-btn-vote" onclick="selectBird('${bird.id}', true)">Votar nesta ave</button>
@@ -229,7 +234,7 @@ function initShowcaseSlider() {
     resetShowcaseTimer();
   });
   document.getElementById('showcaseNext')?.addEventListener('click', () => {
-    nextSlide();
+    randomNextSlide();
     resetShowcaseTimer();
   });
 
@@ -254,8 +259,13 @@ function goToSlide(index) {
   restartProgressBar();
 }
 
-function nextSlide() {
-  goToSlide(currentSlideIndex + 1);
+function randomNextSlide() {
+  if (BIRDS_DATA.length <= 1) return;
+  let nextIdx;
+  do {
+    nextIdx = Math.floor(Math.random() * BIRDS_DATA.length);
+  } while (nextIdx === currentSlideIndex);
+  goToSlide(nextIdx);
 }
 
 function prevSlide() {
@@ -267,7 +277,7 @@ function startShowcaseTimer() {
   clearInterval(showcaseTimer);
   showcaseTimer = setInterval(() => {
     if (!isShowcasePaused) {
-      nextSlide();
+      randomNextSlide();
     }
   }, CONFIG.SHOWCASE_INTERVAL_MS);
 }
@@ -309,8 +319,8 @@ function renderBirdsGrid() {
         <p class="bird-card__scientific">${bird.scientific}</p>
         <p class="bird-card__excerpt">${bird.excerpt}</p>
         <div class="bird-card__actions">
-          <button type="button" class="bird-card__btn-info" onclick="openBirdModal('${bird.id}')">Conhecer a espécie</button>
-          <button type="button" class="bird-card__btn-vote" onclick="selectBird('${bird.id}', true)">Votar nesta ave</button>
+          <button type="button" class="bird-card__btn-info" onclick="openBirdModal('${bird.id}')">Conhecer</button>
+          <button type="button" class="bird-card__btn-vote" onclick="selectBird('${bird.id}', true)">Votar</button>
         </div>
       </div>
     </article>
@@ -343,7 +353,6 @@ function initEventListeners() {
     }
   });
 
-  // Botões do Modal de Sucesso
   document.getElementById('btnSuccessClose')?.addEventListener('click', () => {
     closeSuccessModal();
     resetFormForNextVote();
@@ -380,7 +389,7 @@ function selectBird(birdId, scrollToVote = false) {
     const isThis = card.getAttribute('data-bird-id') === birdId;
     card.classList.toggle('is-selected', isThis);
     const voteBtn = card.querySelector('.bird-card__btn-vote');
-    if (voteBtn) voteBtn.textContent = isThis ? 'Selecionada' : 'Votar nesta ave';
+    if (voteBtn) voteBtn.textContent = isThis ? 'Selecionada' : 'Votar';
   });
 
   const preview = document.getElementById('selectedBirdPreview');
@@ -490,14 +499,13 @@ function closeSuccessModal() {
   modal?.setAttribute('aria-hidden', 'true');
 }
 
-// Reseta o formulário para permitir múltiplos votos em sequência no mesmo dispositivo
 function resetFormForNextVote() {
   selectedBirdId = null;
 
   document.querySelectorAll('.bird-card').forEach(card => {
     card.classList.remove('is-selected');
     const voteBtn = card.querySelector('.bird-card__btn-vote');
-    if (voteBtn) voteBtn.textContent = 'Votar nesta ave';
+    if (voteBtn) voteBtn.textContent = 'Votar';
   });
 
   const preview = document.getElementById('selectedBirdPreview');
