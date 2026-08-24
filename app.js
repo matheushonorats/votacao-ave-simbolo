@@ -4,6 +4,7 @@
  */
 
 const CONFIG = {
+  WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbyL9UkIQg9rMGb915-kHqlB8tAFJ6mV1QmFGNQefzu744EoSh0HGF2c1NgADCb9U8Xo/exec',
   STATUS_VOTACAO: 'ABERTA',
   SHOWCASE_INTERVAL_MS: 7000,
 };
@@ -131,7 +132,10 @@ document.addEventListener('DOMContentLoaded', () => {
 function sendIframeHeight() {
   try {
     if (window.parent && window.parent !== window) {
-      const h = document.body ? document.body.scrollHeight : 0;
+      const h = Math.max(
+        document.body ? document.body.scrollHeight : 0,
+        document.documentElement ? document.documentElement.scrollHeight : 0
+      );
       if (h > 0 && Math.abs(h - _lastSentHeight) > 5) {
         _lastSentHeight = h;
         window.parent.postMessage({ votacaoAveSimbolo: true, height: h }, '*');
@@ -342,7 +346,6 @@ function initEventListeners() {
     }
   });
 
-  // Botões do Modal de Sucesso
   document.getElementById('btnSuccessClose')?.addEventListener('click', () => {
     closeSuccessModal();
     resetFormForNextVote();
@@ -402,7 +405,6 @@ function selectBird(birdId, scrollToVote = false) {
     const section = document.getElementById('votingSection');
     if (section) {
       section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      // Se estiver em iframe, notifica o pai para rolar até a seção de voto
       const rect = section.getBoundingClientRect();
       const absoluteTop = window.scrollY + rect.top;
       notifyParentToScroll(absoluteTop);
@@ -417,7 +419,7 @@ function selectBird(birdId, scrollToVote = false) {
 }
 
 // ============================================================
-// MODAL DE DETALHES DA ESPÉCIE (COM POSICIONAMENTO DINÂMICO)
+// MODAL DE DETALHES DA ESPÉCIE
 // ============================================================
 let activeModalBirdId = null;
 
@@ -442,11 +444,9 @@ function openBirdModal(birdId) {
   modal?.classList.add('is-open');
   modal?.setAttribute('aria-hidden', 'false');
 
-  // Ajusta o scroll do modal para o topo do conteúdo interno
   const modalCard = modal.querySelector('.modal-card');
   if (modalCard) modalCard.scrollTop = 0;
 
-  // Garante que o modal fique no campo de visão se estiver dentro de um iframe longo
   const cardElement = document.getElementById(`card-${birdId}`);
   if (cardElement) {
     const rect = cardElement.getBoundingClientRect();
@@ -479,7 +479,6 @@ function openSuccessModal(bird, email) {
   modal?.classList.add('is-open');
   modal?.setAttribute('aria-hidden', 'false');
 
-  // Garante foco e visão no modal de sucesso
   const votingSection = document.getElementById('votingSection');
   if (votingSection) {
     const rect = votingSection.getBoundingClientRect();
@@ -493,18 +492,15 @@ function closeSuccessModal() {
   modal?.setAttribute('aria-hidden', 'true');
 }
 
-// Reseta o formulário para permitir múltiplos votos em sequência no mesmo dispositivo
 function resetFormForNextVote() {
   selectedBirdId = null;
 
-  // Desmarca cards
   document.querySelectorAll('.bird-card').forEach(card => {
     card.classList.remove('is-selected');
     const voteBtn = card.querySelector('.bird-card__btn-vote');
     if (voteBtn) voteBtn.textContent = 'Votar nesta ave';
   });
 
-  // Limpa preview
   const preview = document.getElementById('selectedBirdPreview');
   if (preview) {
     preview.innerHTML = `
@@ -515,7 +511,6 @@ function resetFormForNextVote() {
     `;
   }
 
-  // Libera e limpa campo de e-mail
   const emailInput = document.getElementById('voterEmail');
   if (emailInput) {
     emailInput.value = '';
@@ -529,7 +524,6 @@ function resetFormForNextVote() {
     errorEl.textContent = '';
   }
 
-  // Reseta botão
   const btn = document.getElementById('btnSubmitVote');
   if (btn) {
     btn.disabled = true;
