@@ -4,17 +4,12 @@
  */
 
 const CONFIG = {
-  STATUS_VOTACAO: 'ABERTA', // 'ABERTA' ou 'ENCERRADA' (sincronizado automaticamente com a planilha)
-  STORAGE_KEY_VOTE: 'setur_ave_simbolo_voto_registrado',
+  STATUS_VOTACAO: 'ABERTA',
   SHOWCASE_INTERVAL_MS: 7000,
 };
 
-// URL base das imagens hospedadas no repositório GitHub (Carregamento rápido via CDN)
 const ASSETS_BASE = 'https://raw.githubusercontent.com/matheushonorats/votacao-ave-simbolo/main/assets';
 
-// ============================================================
-// DADOS OFICIAIS DAS AVES CANDIDATAS (COM ENQUADRAMENTO / FOCAL POINT)
-// ============================================================
 const BIRDS_DATA = [
   {
     id: 'beija-flor-rajado',
@@ -114,9 +109,6 @@ const BIRDS_DATA = [
   }
 ];
 
-// ============================================================
-// ESTADO DA APLICAÇÃO
-// ============================================================
 let selectedBirdId = null;
 let userIpAddress = '';
 let currentSlideIndex = 0;
@@ -124,16 +116,12 @@ let showcaseTimer = null;
 let isShowcasePaused = false;
 let _lastSentHeight = 0;
 
-// ============================================================
-// INICIALIZAÇÃO
-// ============================================================
 document.addEventListener('DOMContentLoaded', () => {
   applyVotingStatus();
   initShowcaseSlider();
   renderBirdsGrid();
   initEventListeners();
   fetchUserIp();
-  checkExistingVote();
   initSpreadsheetStatusSync();
 
   setInterval(sendIframeHeight, 500);
@@ -148,6 +136,14 @@ function sendIframeHeight() {
         _lastSentHeight = h;
         window.parent.postMessage({ votacaoAveSimbolo: true, height: h }, '*');
       }
+    }
+  } catch (e) {}
+}
+
+function notifyParentToScroll(targetY) {
+  try {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ votacaoAveSimbolo: true, action: 'scrollTo', top: targetY || 0 }, '*');
     }
   } catch (e) {}
 }
@@ -193,28 +189,6 @@ function fetchUserIp() {
     .then(r => r.json())
     .then(d => { userIpAddress = d.ip || ''; })
     .catch(() => { userIpAddress = ''; });
-}
-
-function checkExistingVote() {
-  if (CONFIG.STATUS_VOTACAO === 'ENCERRADA') return;
-
-  try {
-    const saved = localStorage.getItem(CONFIG.STORAGE_KEY_VOTE);
-    if (saved) {
-      const data = JSON.parse(saved);
-      const btn = document.getElementById('btnSubmitVote');
-      const emailInput = document.getElementById('voterEmail');
-      if (emailInput) {
-        emailInput.value = data.email || '';
-        emailInput.disabled = true;
-      }
-      if (btn) {
-        btn.disabled = true;
-        btn.textContent = 'Voto já Registrado neste Dispositivo';
-      }
-      showToast('Identificamos um voto já computado com este dispositivo para a espécie: ' + data.birdName, 'info');
-    }
-  } catch (e) {}
 }
 
 // ============================================================
@@ -316,7 +290,7 @@ function restartProgressBar() {
 }
 
 // ============================================================
-// RENDERIZAÇÃO DO GRID DE AVES (COM ENQUADRAMENTO PRECISO)
+// RENDERIZAÇÃO DO GRID DE AVES
 // ============================================================
 function renderBirdsGrid() {
   const container = document.getElementById('birdsGrid');
@@ -368,7 +342,15 @@ function initEventListeners() {
     }
   });
 
-  document.getElementById('btnSuccessClose')?.addEventListener('click', closeSuccessModal);
+  // Botões do Modal de Sucesso
+  document.getElementById('btnSuccessClose')?.addEventListener('click', () => {
+    closeSuccessModal();
+    resetFormForNextVote();
+  });
+  document.getElementById('btnNewVoteAction')?.addEventListener('click', () => {
+    closeSuccessModal();
+    resetFormForNextVote();
+  });
 
   const emailInput = document.getElementById('voterEmail');
   emailInput?.addEventListener('input', () => {
@@ -420,6 +402,11 @@ function selectBird(birdId, scrollToVote = false) {
     const section = document.getElementById('votingSection');
     if (section) {
       section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Se estiver em iframe, notifica o pai para rolar até a seção de voto
+      const rect = section.getBoundingClientRect();
+      const absoluteTop = window.scrollY + rect.top;
+      notifyParentToScroll(absoluteTop);
+
       setTimeout(() => {
         document.getElementById('voterEmail')?.focus();
       }, 500);
@@ -430,7 +417,7 @@ function selectBird(birdId, scrollToVote = false) {
 }
 
 // ============================================================
-// MODAL DE DETALHES DA ESPÉCIE
+// MODAL DE DETALHES DA ESPÉCIE (COM POSICIONAMENTO DINÂMICO)
 // ============================================================
 let activeModalBirdId = null;
 
@@ -454,14 +441,25 @@ function openBirdModal(birdId) {
   const modal = document.getElementById('birdModal');
   modal?.classList.add('is-open');
   modal?.setAttribute('aria-hidden', 'false');
-  document.body.style.overflow = 'hidden';
+
+  // Ajusta o scroll do modal para o topo do conteúdo interno
+  const modalCard = modal.querySelector('.modal-card');
+  if (modalCard) modalCard.scrollTop = 0;
+
+  // Garante que o modal fique no campo de visão se estiver dentro de um iframe longo
+  const cardElement = document.getElementById(`card-${birdId}`);
+  if (cardElement) {
+    const rect = cardElement.getBoundingClientRect();
+    const targetScrollY = window.scrollY + rect.top - 40;
+    notifyParentToScroll(targetScrollY);
+    modal.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
 }
 
 function closeBirdModal() {
   const modal = document.getElementById('birdModal');
   modal?.classList.remove('is-open');
   modal?.setAttribute('aria-hidden', 'true');
-  document.body.style.overflow = '';
   activeModalBirdId = null;
   isShowcasePaused = false;
 }
@@ -480,14 +478,67 @@ function openSuccessModal(bird, email) {
   const modal = document.getElementById('successModal');
   modal?.classList.add('is-open');
   modal?.setAttribute('aria-hidden', 'false');
-  document.body.style.overflow = 'hidden';
+
+  // Garante foco e visão no modal de sucesso
+  const votingSection = document.getElementById('votingSection');
+  if (votingSection) {
+    const rect = votingSection.getBoundingClientRect();
+    notifyParentToScroll(window.scrollY + rect.top);
+  }
 }
 
 function closeSuccessModal() {
   const modal = document.getElementById('successModal');
   modal?.classList.remove('is-open');
   modal?.setAttribute('aria-hidden', 'true');
-  document.body.style.overflow = '';
+}
+
+// Reseta o formulário para permitir múltiplos votos em sequência no mesmo dispositivo
+function resetFormForNextVote() {
+  selectedBirdId = null;
+
+  // Desmarca cards
+  document.querySelectorAll('.bird-card').forEach(card => {
+    card.classList.remove('is-selected');
+    const voteBtn = card.querySelector('.bird-card__btn-vote');
+    if (voteBtn) voteBtn.textContent = 'Votar nesta ave';
+  });
+
+  // Limpa preview
+  const preview = document.getElementById('selectedBirdPreview');
+  if (preview) {
+    preview.innerHTML = `
+      <div class="selected-bird-preview__empty">
+        <span class="preview-icon">&bull;</span>
+        <p>Nenhuma ave selecionada no momento. Escolha uma das opções acima para continuar.</p>
+      </div>
+    `;
+  }
+
+  // Libera e limpa campo de e-mail
+  const emailInput = document.getElementById('voterEmail');
+  if (emailInput) {
+    emailInput.value = '';
+    emailInput.disabled = false;
+    emailInput.classList.remove('is-invalid');
+  }
+
+  const errorEl = document.getElementById('emailError');
+  if (errorEl) {
+    errorEl.classList.remove('is-visible');
+    errorEl.textContent = '';
+  }
+
+  // Reseta botão
+  const btn = document.getElementById('btnSubmitVote');
+  if (btn) {
+    btn.disabled = true;
+    btn.classList.remove('is-loading');
+    const btnText = btn.querySelector('.btn-text');
+    if (btnText) btnText.textContent = 'Confirmar meu Voto';
+  }
+
+  showToast('Pronto para registrar o próximo voto!', 'info');
 }
 
 // ============================================================
@@ -581,17 +632,7 @@ async function handleVoteSubmit(e) {
       .withSuccessHandler((res) => {
         btn.classList.remove('is-loading');
         if (res && res.ok) {
-          try {
-            localStorage.setItem(CONFIG.STORAGE_KEY_VOTE, JSON.stringify({
-              email: email,
-              birdId: bird.id,
-              birdName: bird.name,
-              date: new Date().toISOString()
-            }));
-          } catch(err) {}
           openSuccessModal(bird, email);
-          emailInput.disabled = true;
-          btn.textContent = 'Voto Registrado';
         } else {
           btn.disabled = false;
           showToast(res.error || 'Erro ao registrar voto.', 'error');
@@ -607,8 +648,6 @@ async function handleVoteSubmit(e) {
     setTimeout(() => {
       btn.classList.remove('is-loading');
       openSuccessModal(bird, email);
-      emailInput.disabled = true;
-      btn.textContent = 'Voto Registrado';
     }, 600);
   }
 }

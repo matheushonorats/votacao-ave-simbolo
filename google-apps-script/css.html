@@ -472,7 +472,7 @@ body {
 .bird-card__media {
   position: relative;
   width: 100%;
-  height: 240px;
+  height: 260px;
   overflow: hidden;
   background-color: #e9ecef;
 }
@@ -845,11 +845,10 @@ body {
 
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(14, 42, 56, 0.7);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(14, 42, 56, 0.8);
   backdrop-filter: blur(6px);
   z-index: 1000;
   display: flex;
@@ -858,6 +857,7 @@ body {
   padding: 24px;
   opacity: 0;
   visibility: hidden;
+  overflow-y: auto;
   transition: var(--transition);
 }
 
@@ -871,12 +871,13 @@ body {
   border-radius: var(--radius-md);
   max-width: 640px;
   width: 100%;
-  max-height: 90vh;
+  max-height: 88vh;
   overflow-y: auto;
   position: relative;
   box-shadow: var(--shadow-lg);
   transform: translateY(20px) scale(0.97);
   transition: var(--transition);
+  margin: auto;
 }
 
 .modal-overlay.is-open .modal-card {
@@ -909,7 +910,7 @@ body {
 .modal-media {
   position: relative;
   width: 100%;
-  height: 280px;
+  height: 300px;
   background-color: #2c3e50;
 }
 
@@ -987,7 +988,7 @@ body {
 .modal-card--success {
   max-width: 480px;
   text-align: center;
-  padding: 40px 32px;
+  padding: 36px 28px;
 }
 
 .success-icon-wrap {
@@ -999,7 +1000,7 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .success-icon {
@@ -1011,13 +1012,13 @@ body {
   font-family: var(--font-serif);
   font-size: 1.5rem;
   color: var(--color-primary);
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .success-message {
   font-size: 0.9375rem;
   color: var(--color-text-muted);
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .success-bird-card {
@@ -1025,7 +1026,7 @@ body {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   padding: 14px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
   font-size: 0.9375rem;
   font-weight: 600;
   color: var(--color-primary);
@@ -1034,7 +1035,7 @@ body {
 .success-subtext {
   font-size: 0.8125rem;
   color: var(--color-text-muted);
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .toast-container {
@@ -1078,7 +1079,7 @@ body {
 .footer {
   background-color: var(--color-primary);
   color: rgba(255, 255, 255, 0.8);
-  padding: 48px 0 36px;
+  padding: 40px 0 32px;
   text-align: center;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -1095,7 +1096,6 @@ body {
   padding: 24px 32px;
   width: 100%;
   max-width: 980px;
-  margin-bottom: 32px;
   box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
@@ -1126,15 +1126,5 @@ body {
   width: 100%;
   height: 1px;
   background-color: var(--color-border);
-}
-
-.footer__text {
-  font-size: 0.875rem;
-}
-
-.footer__meta {
-  font-size: 0.8125rem;
-  margin-top: 6px;
-  color: rgba(255, 255, 255, 0.55);
 }
 </style>
