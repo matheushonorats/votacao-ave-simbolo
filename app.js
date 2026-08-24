@@ -6,7 +6,7 @@
 const CONFIG = {
   WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbyL9UkIQg9rMGb915-kHqlB8tAFJ6mV1QmFGNQefzu744EoSh0HGF2c1NgADCb9U8Xo/exec',
   STATUS_VOTACAO: 'ABERTA',
-  SHOWCASE_INTERVAL_MS: 4500, // Transição mais rápida
+  SHOWCASE_INTERVAL_MS: 4500,
 };
 
 const ASSETS_BASE = 'https://raw.githubusercontent.com/matheushonorats/votacao-ave-simbolo/main/assets';
@@ -19,7 +19,7 @@ const BIRDS_DATA = [
     image: `${ASSETS_BASE}/beija-flor-rajado.jpg`,
     focalPoint: 'center 35%',
     category: 'Mata Atlântica',
-    tag: 'Maior Beija-flor do Bioma',
+    tag: 'Mata e Áreas Verdes',
     excerpt: 'Endêmico da Mata Atlântica e o maior beija-flor do bioma, frequenta desde quintais e praças até florestas preservadas.',
     description: `
       <p>O Beija-flor-rajado é uma espécie bastante presente em nossa região, podendo ser observado em diversos locais de São Sebastião, desde os quintais de nossas casas até praças, áreas verdes, bebedouros e áreas de Mata Atlântica preservada.</p>
@@ -35,7 +35,7 @@ const BIRDS_DATA = [
     image: `${ASSETS_BASE}/surucua-de-barriga-amarela.jpg`,
     focalPoint: 'center 30%',
     category: 'Mata Atlântica',
-    tag: 'Cores Vivas da Mata',
+    tag: 'Interior da Mata',
     excerpt: 'Ave de beleza exuberante com ventre amarelo-ouro e cabeça azul-escuro, muito admirada por observadores de todo o país.',
     description: `
       <p>O Surucuá-de-barriga-amarela é uma das aves mais espetaculares e emblemáticas que habitam as matas de São Sebastião.</p>
@@ -51,7 +51,7 @@ const BIRDS_DATA = [
     image: `${ASSETS_BASE}/pintadinho.jpg`,
     focalPoint: 'center 45%',
     category: 'Mata Atlântica',
-    tag: 'Plumagem Única e Rara',
+    tag: 'Sub-bosque e Bambuzais',
     excerpt: 'Pequena e encantadora ave endêmica com plumagem ricamente pontilhada em preto e branco, habitante típica dos bambuzais.',
     description: `
       <p>O Pintadinho é uma ave de pequeno porte, medindo cerca de 11 centímetros, com um padrão visual único composto por delicadas escamas e manchas pretas e brancas por todo o corpo.</p>
@@ -67,7 +67,7 @@ const BIRDS_DATA = [
     image: `${ASSETS_BASE}/tucano-de-bico-preto.jpg`,
     focalPoint: 'center 25%',
     category: 'Mata Atlântica',
-    tag: 'Semeador da Floresta',
+    tag: 'Copas e Encostas',
     excerpt: 'Com bico esculpido e peito amarelo-alaranjado, é um dos mais carismáticos semeadores da floresta atlântica costeira.',
     description: `
       <p>O Tucano-de-bico-preto é uma das espécies mais carismáticas, populares e fáceis de identificar em todo o litoral norte paulista.</p>
@@ -83,7 +83,7 @@ const BIRDS_DATA = [
     image: `${ASSETS_BASE}/garca-branca-grande.jpg`,
     focalPoint: 'center 18%',
     category: 'Litoral e Manguezal',
-    tag: 'Símbolo da Costa Caiçara',
+    tag: 'Rios e Manguezais',
     excerpt: 'Elegante e majestosa, intimamente ligada aos manguezais, rios, orla marítima e ao cotidiano dos pescadores caiçaras.',
     description: `
       <p>A Garça-branca-grande é uma espécie bastante presente em nossa região e de fácil observação, principalmente em áreas próximas a rios, córregos, manguezais e ambientes costeiros. Também é comum encontrá-la nas proximidades de embarcações e áreas utilizadas por pescadores, características que reforçam sua relação com a cultura e o modo de vida caiçara.</p>
@@ -99,7 +99,7 @@ const BIRDS_DATA = [
     image: `${ASSETS_BASE}/jao-do-sul.jpg`,
     focalPoint: 'center 45%',
     category: 'Mata Atlântica',
-    tag: 'Voz das Matas Preservadas',
+    tag: 'Solo da Floresta',
     excerpt: 'Ave florestal discreta de canto melancólico inconfundível, símbolo vivo da preservação das matas primárias de São Sebastião.',
     description: `
       <p>O Jaó-do-sul é uma ave florestal de solo, pertencente à tradicional família dos tinamídeos (mesmo grupo do inhambu e da macuco).</p>
@@ -203,7 +203,6 @@ function initShowcaseSlider() {
   const dotsContainer = document.getElementById('showcaseDots');
   if (!slider || !dotsContainer) return;
 
-  // Renderiza slides elegantes sem parágrafos longos, deixando a imagem em destaque
   slider.innerHTML = BIRDS_DATA.map((bird, idx) => `
     <div class="showcase-slide ${idx === 0 ? 'is-active' : ''}" data-index="${idx}">
       <div class="showcase-img-wrap">
