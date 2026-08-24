@@ -196,7 +196,7 @@ function fetchUserIp() {
 }
 
 // ============================================================
-// SHOWCASE CAROUSEL (RÁPIDO, DISCRETO E DINÂMICO/ALEATÓRIO)
+// SHOWCASE CAROUSEL
 // ============================================================
 function initShowcaseSlider() {
   const slider = document.getElementById('showcaseSlider');
@@ -345,10 +345,15 @@ function initEventListeners() {
   document.getElementById('successModal')?.addEventListener('click', (e) => {
     if (e.target.id === 'successModal') closeSuccessModal();
   });
+  document.getElementById('alertModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'alertModal') closeAlertModal();
+  });
+
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeBirdModal();
       closeSuccessModal();
+      closeAlertModal();
     }
   });
 
@@ -360,9 +365,18 @@ function initEventListeners() {
     closeSuccessModal();
     resetFormForNextVote();
   });
+  document.getElementById('btnAlertModalClose')?.addEventListener('click', () => {
+    closeAlertModal();
+    const emailInput = document.getElementById('voterEmail');
+    if (emailInput) {
+      emailInput.value = '';
+      emailInput.focus();
+    }
+  });
 
   const emailInput = document.getElementById('voterEmail');
   emailInput?.addEventListener('input', () => {
+    hideInlineAlert();
     validateEmailInput();
     updateSubmitButtonState();
   });
@@ -498,8 +512,66 @@ function closeSuccessModal() {
   modal?.setAttribute('aria-hidden', 'true');
 }
 
+// ============================================================
+// MODAL & BANNER DE ALERTA EM ALTO DESTAQUE (VOTO JÁ REGISTRADO / ERRO)
+// ============================================================
+function openAlertModal(title, message, detailText = '') {
+  const modal = document.getElementById('alertModal');
+  const titleEl = document.getElementById('alertModalTitle');
+  const msgEl = document.getElementById('alertModalMessage');
+  const detailEl = document.getElementById('alertModalDetail');
+
+  if (titleEl) titleEl.textContent = title;
+  if (msgEl) msgEl.textContent = message;
+
+  if (detailEl) {
+    if (detailText) {
+      detailEl.textContent = detailText;
+      detailEl.style.display = 'block';
+    } else {
+      detailEl.style.display = 'none';
+    }
+  }
+
+  modal?.classList.add('is-open');
+  modal?.setAttribute('aria-hidden', 'false');
+
+  const votingSection = document.getElementById('votingSection');
+  if (votingSection) {
+    const rect = votingSection.getBoundingClientRect();
+    notifyParentToScroll(window.scrollY + rect.top);
+  }
+}
+
+function closeAlertModal() {
+  const modal = document.getElementById('alertModal');
+  modal?.classList.remove('is-open');
+  modal?.setAttribute('aria-hidden', 'true');
+}
+
+function showInlineAlert(title, text) {
+  const banner = document.getElementById('formAlertBanner');
+  const titleEl = document.getElementById('formAlertTitle');
+  const textEl = document.getElementById('formAlertText');
+
+  if (titleEl) titleEl.textContent = title;
+  if (textEl) textEl.textContent = text;
+  if (banner) banner.style.display = 'flex';
+
+  const emailInput = document.getElementById('voterEmail');
+  if (emailInput) {
+    emailInput.classList.add('is-invalid');
+  }
+}
+
+function hideInlineAlert() {
+  const banner = document.getElementById('formAlertBanner');
+  if (banner) banner.style.display = 'none';
+}
+
 function resetFormForNextVote() {
   selectedBirdId = null;
+  hideInlineAlert();
 
   document.querySelectorAll('.bird-card').forEach(card => {
     card.classList.remove('is-selected');
@@ -594,12 +666,12 @@ async function handleVoteSubmit(e) {
   e.preventDefault();
 
   if (CONFIG.STATUS_VOTACAO === 'ENCERRADA') {
-    showToast('A votação oficial está encerrada.', 'info');
+    openAlertModal('Votação Encerrada', 'O período oficial de votação foi finalizado.');
     return;
   }
 
   if (!selectedBirdId) {
-    showToast('Por favor, selecione uma ave antes de confirmar seu voto.', 'error');
+    openAlertModal('Nenhuma Ave Selecionada', 'Por favor, escolha uma das seis espécies candidatas acima antes de confirmar seu voto.');
     return;
   }
 
@@ -617,6 +689,7 @@ async function handleVoteSubmit(e) {
   
   btn.disabled = true;
   btn.classList.add('is-loading');
+  hideInlineAlert();
 
   const payload = {
     email: email,
@@ -635,13 +708,17 @@ async function handleVoteSubmit(e) {
           openSuccessModal(bird, email);
         } else {
           btn.disabled = false;
-          showToast(res.error || 'Erro ao registrar voto.', 'error');
+          const errMsg = res.error || 'Não foi possível computar o seu voto.';
+          // Exibe tanto o modal central em destaque quanto o alerta inline no campo
+          openAlertModal('Voto Não Registrado', errMsg);
+          showInlineAlert('Atenção: Voto não computado', errMsg);
         }
       })
       .withFailureHandler((err) => {
         btn.classList.remove('is-loading');
         btn.disabled = false;
-        showToast('Erro de conexão: ' + err.message, 'error');
+        openAlertModal('Falha de Comunicação', 'Ocorreu um erro ao conectar com o servidor: ' + err.message);
+        showInlineAlert('Erro de Conexão', err.message);
       })
       .computarVoto(payload);
   } else {

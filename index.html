@@ -53,7 +53,7 @@
     <!-- Section Header for Grid -->
     <section class="section-header">
       <h2 class="section-title">Espécies Candidatas</h2>
-      <p class="section-subtitle">Clique em <strong>Conhecer a espécie</strong> para ver detalhes completos ou em <strong>Votar nesta ave</strong> para selecioná-la.</p>
+      <p class="section-subtitle">Clique em <strong>Conhecer</strong> para ver detalhes completos ou em <strong>Votar</strong> para selecioná-la.</p>
     </section>
 
     <!-- Grid of Birds -->
@@ -65,6 +65,21 @@
         <div class="voting-card__header">
           <h3 class="voting-card__title">Confirmação do Voto</h3>
           <p class="voting-card__desc">Verifique a espécie selecionada e informe o seu e-mail para validar o seu voto.</p>
+        </div>
+
+        <!-- Banner de Alerta Inline de Erro / Duplicidade -->
+        <div class="form-alert-banner" id="formAlertBanner" style="display: none;" role="alert">
+          <div class="form-alert-banner__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          </div>
+          <div class="form-alert-banner__content">
+            <strong class="form-alert-banner__title" id="formAlertTitle">Aviso Importante</strong>
+            <p class="form-alert-banner__text" id="formAlertText"></p>
+          </div>
         </div>
 
         <form id="voteForm" class="vote-form" novalidate>
@@ -155,6 +170,29 @@
         <div class="modal-footer" style="margin-top:16px; border:none; padding:0; gap:10px;">
           <button type="button" class="btn btn-primary" id="btnNewVoteAction">Registrar Próximo Voto</button>
           <button type="button" class="btn btn-secondary" id="btnSuccessClose">Concluir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alert / Warning Modal (Para Voto Já Registrado ou Erros em Alto Destaque) -->
+  <div class="modal-overlay" id="alertModal" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-card modal-card--alert">
+      <div class="alert-modal-content">
+        <div class="alert-icon-wrap">
+          <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </div>
+        <h3 class="alert-modal-title" id="alertModalTitle">Aviso de Votação</h3>
+        <p class="alert-modal-message" id="alertModalMessage">
+          Identificamos uma restrição no registro do voto.
+        </p>
+        <div class="alert-modal-detail" id="alertModalDetail" style="display:none;"></div>
+        <div class="modal-footer" style="margin-top:20px; border:none; padding:0;">
+          <button type="button" class="btn btn-primary" id="btnAlertModalClose">Entendido / Informar Outro E-mail</button>
         </div>
       </div>
     </div>
