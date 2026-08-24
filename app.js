@@ -3,29 +3,24 @@
  * Lógica do cliente, dados das espécies, showcase cinematográfico e integração.
  */
 
-// ============================================================
-// CONFIGURAÇÕES GERAIS E GERENCIAMENTO DA VOTAÇÃO
-// ============================================================
-// Para gerenciar a votação:
-// 1. WEB_APP_URL: Insira a URL da sua implantação do Google Apps Script
-// 2. STATUS_VOTACAO: Altere para 'ENCERRADA' quando desejar finalizar o recebimento de votos
 const CONFIG = {
-  WEB_APP_URL: '', 
-  STATUS_VOTACAO: 'ABERTA', // 'ABERTA' ou 'ENCERRADA'
+  STATUS_VOTACAO: 'ABERTA', // 'ABERTA' ou 'ENCERRADA' (sincronizado automaticamente com a planilha)
   STORAGE_KEY_VOTE: 'setur_ave_simbolo_voto_registrado',
-  SHOWCASE_INTERVAL_MS: 7000, // Tempo de permanência de cada ave no banner (7 segundos)
+  SHOWCASE_INTERVAL_MS: 7000,
 };
+
+// URL base das imagens hospedadas no repositório GitHub
+const ASSETS_BASE = 'https://raw.githubusercontent.com/matheushonorats/votacao-ave-simbolo/main/assets';
 
 // ============================================================
 // DADOS OFICIAIS DAS AVES CANDIDATAS (TEXTOS E FOTOS)
-// Para alterar qualquer texto, nome ou imagem, edite este array:
 // ============================================================
 const BIRDS_DATA = [
   {
     id: 'beija-flor-rajado',
     name: 'Beija-flor-rajado',
     scientific: 'Ramphodon naevius',
-    image: 'assets/beija-flor-rajado.jpg',
+    image: `${ASSETS_BASE}/beija-flor-rajado.jpg`,
     category: 'Mata Atlântica',
     tag: 'Maior Beija-flor da Região',
     excerpt: 'Endêmico da Mata Atlântica e o maior beija-flor do bioma, frequenta desde quintais e praças até florestas preservadas.',
@@ -40,7 +35,7 @@ const BIRDS_DATA = [
     id: 'surucua-de-barriga-amarela',
     name: 'Surucuá-de-barriga-amarela',
     scientific: 'Trogon viridis',
-    image: 'assets/surucua-de-barriga-amarela.jpg',
+    image: `${ASSETS_BASE}/surucua-de-barriga-amarela.jpg`,
     category: 'Mata Atlântica',
     tag: 'Floresta Preservada · Cores Vivas',
     excerpt: 'Ave de beleza exuberante com ventre amarelo-ouro e cabeça azul-escuro, muito admirada por observadores de todo o país.',
@@ -55,7 +50,7 @@ const BIRDS_DATA = [
     id: 'pintadinho',
     name: 'Pintadinho',
     scientific: 'Drymophila squamata',
-    image: 'assets/pintadinho.jpg',
+    image: `${ASSETS_BASE}/pintadinho.jpg`,
     category: 'Mata Atlântica',
     tag: 'Endêmico · Sub-bosque Nativo',
     excerpt: 'Pequena e encantadora ave endêmica com plumagem ricamente pontilhada em preto e branco, habitante típica dos bambuzais.',
@@ -70,7 +65,7 @@ const BIRDS_DATA = [
     id: 'tucano-de-bico-preto',
     name: 'Tucano-de-bico-preto',
     scientific: 'Ramphastos vitellinus',
-    image: 'assets/tucano-de-bico-preto.jpg',
+    image: `${ASSETS_BASE}/tucano-de-bico-preto.jpg`,
     category: 'Mata Atlântica',
     tag: 'Dispersor de Sementes · Ícone Natural',
     excerpt: 'Com bico esculpido e peito amarelo-alaranjado, é um dos mais carismáticos semeadores da floresta atlântica costeira.',
@@ -85,7 +80,7 @@ const BIRDS_DATA = [
     id: 'garca-branca-grande',
     name: 'Garça-branca-grande',
     scientific: 'Ardea alba',
-    image: 'assets/garca-branca-grande.jpg',
+    image: `${ASSETS_BASE}/garca-branca-grande.jpg`,
     category: 'Litoral e Manguezal',
     tag: 'Ambientes Costeiros · Cultura Caiçara',
     excerpt: 'Elegante e majestosa, intimamente ligada aos manguezais, rios, orla marítima e ao cotidiano dos pescadores caiçaras.',
@@ -100,7 +95,7 @@ const BIRDS_DATA = [
     id: 'jao-do-sul',
     name: 'Jaó-do-sul',
     scientific: 'Crypturellus noctivagus',
-    image: 'assets/jao-do-sul.jpg',
+    image: `${ASSETS_BASE}/jao-do-sul.jpg`,
     category: 'Mata Atlântica',
     tag: 'Mata Primária · Canto Inconfundível',
     excerpt: 'Ave florestal discreta de canto melancólico inconfundível, símbolo vivo da preservação das matas primárias de São Sebastião.',
@@ -120,7 +115,6 @@ let selectedBirdId = null;
 let userIpAddress = '';
 let currentSlideIndex = 0;
 let showcaseTimer = null;
-let showcaseProgressTimer = null;
 let isShowcasePaused = false;
 
 // ============================================================
@@ -133,9 +127,22 @@ document.addEventListener('DOMContentLoaded', () => {
   initEventListeners();
   fetchUserIp();
   checkExistingVote();
+  initSpreadsheetStatusSync();
 });
 
-// Aplica o status de votação (Aberta vs Encerrada)
+function initSpreadsheetStatusSync() {
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler((res) => {
+        if (res && res.status) {
+          CONFIG.STATUS_VOTACAO = res.status;
+          applyVotingStatus();
+        }
+      })
+      .obterStatusVotacao();
+  }
+}
+
 function applyVotingStatus() {
   const isClosed = CONFIG.STATUS_VOTACAO === 'ENCERRADA';
   const badge = document.getElementById('headerStatusBadge');
@@ -149,10 +156,16 @@ function applyVotingStatus() {
     }
     if (votingCard) votingCard.style.display = 'none';
     if (closedCard) closedCard.style.display = 'block';
+  } else {
+    if (badge) {
+      badge.textContent = 'Votação Oficial Aberta';
+      badge.classList.remove('badge-status--closed');
+    }
+    if (votingCard) votingCard.style.display = 'block';
+    if (closedCard) closedCard.style.display = 'none';
   }
 }
 
-// Captura de IP para auditoria
 function fetchUserIp() {
   fetch('https://api.ipify.org?format=json')
     .then(r => r.json())
@@ -160,7 +173,6 @@ function fetchUserIp() {
     .catch(() => { userIpAddress = ''; });
 }
 
-// Verifica se o navegador atual já registrou voto localmente
 function checkExistingVote() {
   if (CONFIG.STATUS_VOTACAO === 'ENCERRADA') return;
 
@@ -184,14 +196,13 @@ function checkExistingVote() {
 }
 
 // ============================================================
-// SHOWCASE CAROUSEL (KEN BURNS BANNER)
+// SHOWCASE CAROUSEL
 // ============================================================
 function initShowcaseSlider() {
   const slider = document.getElementById('showcaseSlider');
   const dotsContainer = document.getElementById('showcaseDots');
   if (!slider || !dotsContainer) return;
 
-  // Monta slides
   slider.innerHTML = BIRDS_DATA.map((bird, idx) => `
     <div class="showcase-slide ${idx === 0 ? 'is-active' : ''}" data-index="${idx}">
       <div class="showcase-img-wrap">
@@ -212,12 +223,10 @@ function initShowcaseSlider() {
     </div>
   `).join('');
 
-  // Monta indicadores
   dotsContainer.innerHTML = BIRDS_DATA.map((_, idx) => `
     <span class="showcase-dot ${idx === 0 ? 'is-active' : ''}" data-index="${idx}" onclick="goToSlide(${idx})"></span>
   `).join('');
 
-  // Botões de navegação
   document.getElementById('showcasePrev')?.addEventListener('click', () => {
     prevSlide();
     resetShowcaseTimer();
@@ -227,7 +236,6 @@ function initShowcaseSlider() {
     resetShowcaseTimer();
   });
 
-  // Pausa ao passar o mouse
   const section = document.querySelector('.showcase-section');
   section?.addEventListener('mouseenter', () => { isShowcasePaused = true; });
   section?.addEventListener('mouseleave', () => { isShowcasePaused = false; });
@@ -316,7 +324,6 @@ function renderBirdsGrid() {
 // EVENTOS E INTERAÇÃO
 // ============================================================
 function initEventListeners() {
-  // Modal de Detalhes
   document.getElementById('modalCloseBtn')?.addEventListener('click', closeBirdModal);
   document.getElementById('modalCloseAction')?.addEventListener('click', closeBirdModal);
   document.getElementById('modalSelectAction')?.addEventListener('click', () => {
@@ -326,7 +333,6 @@ function initEventListeners() {
     }
   });
 
-  // Fechar modal ao clicar no backdrop ou com tecla Escape
   document.getElementById('birdModal')?.addEventListener('click', (e) => {
     if (e.target.id === 'birdModal') closeBirdModal();
   });
@@ -340,17 +346,14 @@ function initEventListeners() {
     }
   });
 
-  // Modal de Sucesso
   document.getElementById('btnSuccessClose')?.addEventListener('click', closeSuccessModal);
 
-  // Validação em tempo real do e-mail
   const emailInput = document.getElementById('voterEmail');
   emailInput?.addEventListener('input', () => {
     validateEmailInput();
     updateSubmitButtonState();
   });
 
-  // Submissão do Formulário
   document.getElementById('voteForm')?.addEventListener('submit', handleVoteSubmit);
 }
 
@@ -368,7 +371,6 @@ function selectBird(birdId, scrollToVote = false) {
 
   selectedBirdId = birdId;
 
-  // Atualizar visual dos cards
   document.querySelectorAll('.bird-card').forEach(card => {
     const isThis = card.getAttribute('data-bird-id') === birdId;
     card.classList.toggle('is-selected', isThis);
@@ -376,7 +378,6 @@ function selectBird(birdId, scrollToVote = false) {
     if (voteBtn) voteBtn.textContent = isThis ? 'Selecionada' : 'Votar nesta ave';
   });
 
-  // Atualizar preview na área de confirmação
   const preview = document.getElementById('selectedBirdPreview');
   if (preview) {
     preview.innerHTML = `
@@ -542,54 +543,53 @@ async function handleVoteSubmit(e) {
   btn.classList.add('is-loading');
 
   const payload = {
-    action: 'computarVoto',
     email: email,
     birdId: bird.id,
     birdName: bird.name,
     scientificName: bird.scientific,
-    timestamp: new Date().toISOString(),
     userAgent: navigator.userAgent,
     userIp: userIpAddress
   };
 
-  try {
-    if (CONFIG.WEB_APP_URL && CONFIG.WEB_APP_URL.startsWith('http')) {
-      await fetch(CONFIG.WEB_APP_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-    } else {
-      await new Promise(resolve => setTimeout(resolve, 700));
-    }
-
-    try {
-      localStorage.setItem(CONFIG.STORAGE_KEY_VOTE, JSON.stringify({
-        email: email,
-        birdId: bird.id,
-        birdName: bird.name,
-        date: new Date().toISOString()
-      }));
-    } catch(err) {}
-
-    btn.classList.remove('is-loading');
-    openSuccessModal(bird, email);
-
-    emailInput.disabled = true;
-    btn.textContent = 'Voto Registrado';
-
-  } catch (error) {
-    console.error('Erro ao enviar voto:', error);
-    btn.classList.remove('is-loading');
-    btn.disabled = false;
-    showToast('Ocorreu uma falha ao registrar o voto. Por favor, tente novamente.', 'error');
+  // Integração com Google Apps Script
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler((res) => {
+        btn.classList.remove('is-loading');
+        if (res && res.ok) {
+          try {
+            localStorage.setItem(CONFIG.STORAGE_KEY_VOTE, JSON.stringify({
+              email: email,
+              birdId: bird.id,
+              birdName: bird.name,
+              date: new Date().toISOString()
+            }));
+          } catch(err) {}
+          openSuccessModal(bird, email);
+          emailInput.disabled = true;
+          btn.textContent = 'Voto Registrado';
+        } else {
+          btn.disabled = false;
+          showToast(res.error || 'Erro ao registrar voto.', 'error');
+        }
+      })
+      .withFailureHandler((err) => {
+        btn.classList.remove('is-loading');
+        btn.disabled = false;
+        showToast('Erro de conexão: ' + err.message, 'error');
+      })
+      .computarVoto(payload);
+  } else {
+    // Simulação caso não esteja dentro do Google Apps Script
+    setTimeout(() => {
+      btn.classList.remove('is-loading');
+      openSuccessModal(bird, email);
+      emailInput.disabled = true;
+      btn.textContent = 'Voto Registrado';
+    }, 600);
   }
 }
 
-// ============================================================
-// HELPER DE NOTIFICAÇÃO TOAST
-// ============================================================
 function showToast(message, type = 'info') {
   const container = document.getElementById('toastContainer');
   if (!container) return;
