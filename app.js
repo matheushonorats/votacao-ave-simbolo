@@ -1,0 +1,466 @@
+/**
+ * VOTAÇÃO AVE SÍMBOLO DE SÃO SEBASTIÃO — FESTIVAL ENTRE ASAS
+ * Lógica do cliente, dados das espécies e integração com Google Apps Script.
+ */
+
+// ============================================================
+// CONFIGURAÇÃO DO ENDPOINT (GOOGLE APPS SCRIPT WEB APP)
+// ============================================================
+// Substitua pela URL da implantação do Web App após publicar o backend
+const CONFIG = {
+  WEB_APP_URL: '', // Ex: 'https://script.google.com/macros/s/AKfycb.../exec'
+  STORAGE_KEY_VOTE: 'setur_ave_simbolo_voto_registrado',
+};
+
+// ============================================================
+// DADOS OFICIAIS DAS AVES CANDIDATAS
+// ============================================================
+const BIRDS_DATA = [
+  {
+    id: 'beija-flor-rajado',
+    name: 'Beija-flor-rajado',
+    scientific: 'Ramphodon naevius',
+    image: 'assets/beija-flor-rajado.jpg',
+    category: 'Mata Atlântica',
+    tag: 'Maior Beija-flor da Região',
+    excerpt: 'Endêmico da Mata Atlântica e o maior beija-flor do bioma, frequenta desde quintais e praças até florestas preservadas.',
+    description: `
+      <p>O Beija-flor-rajado é uma espécie bastante presente em nossa região, podendo ser observado em diversos locais de São Sebastião, desde os quintais de nossas casas até praças, áreas verdes, bebedouros e áreas de Mata Atlântica preservada.</p>
+      <p>Endêmico da Mata Atlântica, o Beija-flor-rajado representa muito bem a importância das aves polinizadoras e nectarívoras para o equilíbrio dos nossos ecossistemas.</p>
+      <p>Com 14 a 16 centímetros de comprimento e pesando entre 5,3 e 9 gramas, é considerado o maior beija-flor da Mata Atlântica e está entre os maiores beija-flores do mundo.</p>
+      <p>Sua presença tão próxima das pessoas e sua forte relação com a Mata Atlântica fazem do Beija-flor-rajado uma excelente espécie para representar a biodiversidade de São Sebastião.</p>
+    `
+  },
+  {
+    id: 'surucua-de-barriga-amarela',
+    name: 'Surucuá-de-barriga-amarela',
+    scientific: 'Trogon viridis',
+    image: 'assets/surucua-de-barriga-amarela.jpg',
+    category: 'Mata Atlântica',
+    tag: 'Floresta Preservada · Cores Vivas',
+    excerpt: 'Ave de beleza exuberante com ventre amarelo-ouro e cabeça azul-escuro, muito admirada por observadores de todo o país.',
+    description: `
+      <p>O Surucuá-de-barriga-amarela é uma das aves mais espetaculares e emblemáticas que habitam as matas de São Sebastião.</p>
+      <p>Com seu ventre amarelo-dourado intenso, dorso verde-metálico e cabeça azul-marinho com anel ocular azul-claro, a espécie se destaca pela elegância incomparável e postura ereta nos galhos.</p>
+      <p>Desempenha papel ecológico fundamental na dispersão de frutos de árvores nativas e no controle de insetos da floresta, sendo um bioindicador vivo de áreas florestais saudáveis e protegidas.</p>
+      <p>Sua presença constante em nossas trilhas e reservas atrai observadores de aves e turistas de natureza de todo o mundo para São Sebastião.</p>
+    `
+  },
+  {
+    id: 'pintadinho',
+    name: 'Pintadinho',
+    scientific: 'Drymophila squamata',
+    image: 'assets/pintadinho.jpg',
+    category: 'Mata Atlântica',
+    tag: 'Endêmico · Sub-bosque Nativo',
+    excerpt: 'Pequena e encantadora ave endêmica com plumagem ricamente pontilhada em preto e branco, habitante típica dos bambuzais.',
+    description: `
+      <p>O Pintadinho é uma ave de pequeno porte, medindo cerca de 11 centímetros, com um padrão visual único composto por delicadas escamas e manchas pretas e brancas por todo o corpo.</p>
+      <p>Endêmico do litoral brasileiro da Mata Atlântica, é uma espécie com forte ligação ecológica com os sub-bosques densos, grotões úmidos e aglomerados de taquaras e bambus nativos de São Sebastião.</p>
+      <p>Ágil e sempre ativo, alimenta-se de insetos e pequenas lagartas, percorrendo a folhagem baixa da floresta com vocalizações marcantes e características.</p>
+      <p>Por ser uma espécie exclusiva da nossa faixa litorânea e símbolo da sofisticação da microfauna florestal, é uma candidata nobre a Ave Símbolo do município.</p>
+    `
+  },
+  {
+    id: 'tucano-de-bico-preto',
+    name: 'Tucano-de-bico-preto',
+    scientific: 'Ramphastos vitellinus',
+    image: 'assets/tucano-de-bico-preto.jpg',
+    category: 'Mata Atlântica',
+    tag: 'Dispersor de Sementes · Ícone Natural',
+    excerpt: 'Com bico esculpido e peito amarelo-alaranjado, é um dos mais carismáticos semeadores da floresta atlântica costeira.',
+    description: `
+      <p>O Tucano-de-bico-preto é uma das espécies mais carismáticas, populares e fáceis de identificar em todo o litoral norte paulista.</p>
+      <p>Com cerca de 46 centímetros de comprimento e seu bico negro característico contrastando com o peito amarelo-vivo e garganta branca, seus sobrevoos em pequenos bandos são um espetáculo diário nos morros de São Sebastião.</p>
+      <p>É considerado um dos principais dispersores de sementes de grandes árvores nativas (como palmiteiros, figueiras e canelas), exercendo papel essencial na regeneração natural da Mata Atlântica.</p>
+      <p>Sua voz forte que ecoa pela serra e seu visual imponente fazem dele uma referência incontestável da fauna sebastianense.</p>
+    `
+  },
+  {
+    id: 'garca-branca-grande',
+    name: 'Garça-branca-grande',
+    scientific: 'Ardea alba',
+    image: 'assets/garca-branca-grande.jpg',
+    category: 'Litoral e Manguezal',
+    tag: 'Ambientes Costeiros · Cultura Caiçara',
+    excerpt: 'Elegante e majestosa, intimamente ligada aos manguezais, rios, orla marítima e ao cotidiano dos pescadores caiçaras.',
+    description: `
+      <p>A Garça-branca-grande é uma espécie bastante presente em nossa região e de fácil observação, principalmente em áreas próximas a rios, córregos, manguezais e ambientes costeiros. Também é comum encontrá-la nas proximidades de embarcações e áreas utilizadas por pescadores, características que reforçam sua relação com a cultura e o modo de vida caiçara.</p>
+      <p>É uma das mais elegantes garças-brancas. Sua plumagem é inteiramente branca e, combinada ao grande porte, às longas pernas e ao longo pescoço, torna a espécie facilmente reconhecível. Em repouso, o pescoço apresenta o característico formato de “S”.</p>
+      <p>O bico é longo e amarelo ou amarelo-alaranjado, enquanto as pernas e os dedos são pretos e a íris é amarela. Durante o período reprodutivo, surgem longas penas ornamentais, chamadas egretas, nas costas, na parte inferior do pescoço e no peito, que podem ultrapassar 50 centímetros e são utilizadas durante o ritual de cortejo.</p>
+      <p>Por ser uma espécie facilmente observada e intimamente relacionada aos rios, manguezais, áreas costeiras e à cultura caiçara, a Garça-branca-grande também é uma forte representante da biodiversidade e da identidade de São Sebastião.</p>
+    `
+  },
+  {
+    id: 'jao-do-sul',
+    name: 'Jaó-do-sul',
+    scientific: 'Crypturellus noctivagus',
+    image: 'assets/jao-do-sul.jpg',
+    category: 'Mata Atlântica',
+    tag: 'Mata Primária · Canto Inconfundível',
+    excerpt: 'Ave florestal discreta de canto melancólico inconfundível, símbolo vivo da preservação das matas primárias de São Sebastião.',
+    description: `
+      <p>O Jaó-do-sul é uma ave florestal de solo, pertencente à tradicional família dos tinamídeos (mesmo grupo do inhambu e da macuco).</p>
+      <p>Habitante do interior da mata primária e de encostas bem preservadas da Serra do Mar em São Sebastião, a espécie possui plumagem camuflada em tons de cinza e ferrugem que a protege no solo coberto de folhas secas.</p>
+      <p>Seu canto melancólico e sonoro é uma das marcas registradas das florestas do litoral paulista, entoado principalmente nas primeiras horas da manhã e ao cair da tarde.</p>
+      <p>Por ser uma espécie estritamente dependente de florestas contínuas e conservadas, a sua escolha como Ave Símbolo ressalta o compromisso do município com a conservação das nossas áreas verdes e mananciais.</p>
+    `
+  }
+];
+
+// ============================================================
+// ESTADO DA APLICAÇÃO
+// ============================================================
+let selectedBirdId = null;
+let userIpAddress = '';
+
+// ============================================================
+// INICIALIZAÇÃO
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  renderBirdsGrid();
+  initEventListeners();
+  fetchUserIp();
+  checkExistingVote();
+});
+
+// Captura de IP para auditoria
+function fetchUserIp() {
+  fetch('https://api.ipify.org?format=json')
+    .then(r => r.json())
+    .then(d => { userIpAddress = d.ip || ''; })
+    .catch(() => { userIpAddress = ''; });
+}
+
+// Verifica se o navegador atual já registrou voto localmente
+function checkExistingVote() {
+  try {
+    const saved = localStorage.getItem(CONFIG.STORAGE_KEY_VOTE);
+    if (saved) {
+      const data = JSON.parse(saved);
+      const btn = document.getElementById('btnSubmitVote');
+      const emailInput = document.getElementById('voterEmail');
+      emailInput.value = data.email || '';
+      emailInput.disabled = true;
+      btn.disabled = true;
+      btn.textContent = 'Voto já Registrado neste Dispositivo';
+      showToast('Identificamos um voto já computado com este dispositivo para a espécie: ' + data.birdName, 'info');
+    }
+  } catch (e) {}
+}
+
+// ============================================================
+// RENDERIZAÇÃO DO GRID DE AVES
+// ============================================================
+function renderBirdsGrid() {
+  const container = document.getElementById('birdsGrid');
+  if (!container) return;
+
+  container.innerHTML = BIRDS_DATA.map(bird => `
+    <article class="bird-card" id="card-${bird.id}" data-bird-id="${bird.id}">
+      <div class="bird-card__media">
+        <img src="${bird.image}" alt="${bird.name} - ${bird.scientific}" class="bird-card__img" loading="lazy">
+        <span class="bird-card__tag">${bird.tag}</span>
+        <span class="bird-card__selected-badge">Selecionada</span>
+      </div>
+      <div class="bird-card__body">
+        <h3 class="bird-card__title">${bird.name}</h3>
+        <p class="bird-card__scientific">${bird.scientific}</p>
+        <p class="bird-card__excerpt">${bird.excerpt}</p>
+        <div class="bird-card__actions">
+          <button type="button" class="bird-card__btn-info" onclick="openBirdModal('${bird.id}')">Conhecer a espécie</button>
+          <button type="button" class="bird-card__btn-vote" onclick="selectBird('${bird.id}', true)">Votar nesta ave</button>
+        </div>
+      </div>
+    </article>
+  `).join('');
+}
+
+// ============================================================
+// EVENTOS E INTERAÇÃO
+// ============================================================
+function initEventListeners() {
+  // Modal de Detalhes
+  document.getElementById('modalCloseBtn')?.addEventListener('click', closeBirdModal);
+  document.getElementById('modalCloseAction')?.addEventListener('click', closeBirdModal);
+  document.getElementById('modalSelectAction')?.addEventListener('click', () => {
+    if (activeModalBirdId) {
+      selectBird(activeModalBirdId, true);
+      closeBirdModal();
+    }
+  });
+
+  // Fechar modal ao clicar no backdrop ou com tecla Escape
+  document.getElementById('birdModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'birdModal') closeBirdModal();
+  });
+  document.getElementById('successModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'successModal') closeSuccessModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeBirdModal();
+      closeSuccessModal();
+    }
+  });
+
+  // Modal de Sucesso
+  document.getElementById('btnSuccessClose')?.addEventListener('click', closeSuccessModal);
+
+  // Validação em tempo real do e-mail
+  const emailInput = document.getElementById('voterEmail');
+  emailInput?.addEventListener('input', () => {
+    validateEmailInput();
+    updateSubmitButtonState();
+  });
+
+  // Submissão do Formulário
+  document.getElementById('voteForm')?.addEventListener('submit', handleVoteSubmit);
+}
+
+// ============================================================
+// SELEÇÃO DA AVE
+// ============================================================
+function selectBird(birdId, scrollToVote = false) {
+  const bird = BIRDS_DATA.find(b => b.id === birdId);
+  if (!bird) return;
+
+  selectedBirdId = birdId;
+
+  // Atualizar visual dos cards
+  document.querySelectorAll('.bird-card').forEach(card => {
+    const isThis = card.getAttribute('data-bird-id') === birdId;
+    card.classList.toggle('is-selected', isThis);
+    const voteBtn = card.querySelector('.bird-card__btn-vote');
+    if (voteBtn) voteBtn.textContent = isThis ? 'Selecionada' : 'Votar nesta ave';
+  });
+
+  // Atualizar preview na área de confirmação
+  const preview = document.getElementById('selectedBirdPreview');
+  if (preview) {
+    preview.innerHTML = `
+      <div class="selected-bird-item">
+        <img src="${bird.image}" alt="${bird.name}" class="selected-bird-item__img">
+        <div class="selected-bird-item__info">
+          <div class="selected-bird-item__title">${bird.name}</div>
+          <div class="selected-bird-item__sub">${bird.scientific}</div>
+          <span class="selected-bird-item__tag">Ave Selecionada para seu Voto</span>
+        </div>
+      </div>
+    `;
+  }
+
+  updateSubmitButtonState();
+
+  if (scrollToVote) {
+    const section = document.getElementById('votingSection');
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Foca no campo de e-mail após a rolagem suave
+      setTimeout(() => {
+        document.getElementById('voterEmail')?.focus();
+      }, 500);
+    }
+  }
+
+  showToast(`Você selecionou: ${bird.name}`, 'info');
+}
+
+// ============================================================
+// MODAL DE DETALHES DA ESPÉCIE
+// ============================================================
+let activeModalBirdId = null;
+
+function openBirdModal(birdId) {
+  const bird = BIRDS_DATA.find(b => b.id === birdId);
+  if (!bird) return;
+
+  activeModalBirdId = birdId;
+
+  document.getElementById('modalImg').src = bird.image;
+  document.getElementById('modalImg').alt = `${bird.name} - ${bird.scientific}`;
+  document.getElementById('modalCategory').textContent = bird.category;
+  document.getElementById('modalTitle').textContent = bird.name;
+  document.getElementById('modalScientific').textContent = bird.scientific;
+  document.getElementById('modalDescription').innerHTML = bird.description;
+
+  const modal = document.getElementById('birdModal');
+  modal?.classList.add('is-open');
+  modal?.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeBirdModal() {
+  const modal = document.getElementById('birdModal');
+  modal?.classList.remove('is-open');
+  modal?.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+  activeModalBirdId = null;
+}
+
+// ============================================================
+// MODAL DE SUCESSO
+// ============================================================
+function openSuccessModal(bird, email) {
+  const birdCard = document.getElementById('successBirdCard');
+  if (birdCard && bird) {
+    birdCard.innerHTML = `
+      <strong>${bird.name}</strong> (<em>${bird.scientific}</em>)<br>
+      <span style="font-size:0.8125rem;color:var(--color-text-muted);">Confirmado para o e-mail: ${email}</span>
+    `;
+  }
+  const modal = document.getElementById('successModal');
+  modal?.classList.add('is-open');
+  modal?.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeSuccessModal() {
+  const modal = document.getElementById('successModal');
+  modal?.classList.remove('is-open');
+  modal?.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+}
+
+// ============================================================
+// VALIDAÇÃO DE E-MAIL
+// ============================================================
+function validateEmail(email) {
+  const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return re.test(String(email).trim().toLowerCase());
+}
+
+function validateEmailInput() {
+  const input = document.getElementById('voterEmail');
+  const errorEl = document.getElementById('emailError');
+  const val = input.value.trim();
+
+  if (!val) {
+    input.classList.remove('is-invalid');
+    errorEl.classList.remove('is-visible');
+    errorEl.textContent = '';
+    return false;
+  }
+
+  if (!validateEmail(val)) {
+    input.classList.add('is-invalid');
+    errorEl.classList.add('is-visible');
+    errorEl.textContent = 'Por favor, informe um endereço de e-mail válido.';
+    return false;
+  }
+
+  input.classList.remove('is-invalid');
+  errorEl.classList.remove('is-visible');
+  errorEl.textContent = '';
+  return true;
+}
+
+function updateSubmitButtonState() {
+  const btn = document.getElementById('btnSubmitVote');
+  const emailInput = document.getElementById('voterEmail');
+  const isEmailValid = validateEmail(emailInput.value.trim());
+  const hasSelectedBird = selectedBirdId !== null;
+
+  if (btn) {
+    btn.disabled = !(isEmailValid && hasSelectedBird);
+  }
+}
+
+// ============================================================
+// SUBMISSÃO DO VOTO
+// ============================================================
+async function handleVoteSubmit(e) {
+  e.preventDefault();
+
+  if (!selectedBirdId) {
+    showToast('Por favor, selecione uma ave antes de confirmar seu voto.', 'error');
+    return;
+  }
+
+  const emailInput = document.getElementById('voterEmail');
+  const email = emailInput.value.trim().toLowerCase();
+
+  if (!validateEmail(email)) {
+    validateEmailInput();
+    emailInput.focus();
+    return;
+  }
+
+  const bird = BIRDS_DATA.find(b => b.id === selectedBirdId);
+  const btn = document.getElementById('btnSubmitVote');
+  
+  // Estado de carregamento
+  btn.disabled = true;
+  btn.classList.add('is-loading');
+
+  const payload = {
+    action: 'computarVoto',
+    email: email,
+    birdId: bird.id,
+    birdName: bird.name,
+    scientificName: bird.scientific,
+    timestamp: new Date().toISOString(),
+    userAgent: navigator.userAgent,
+    userIp: userIpAddress
+  };
+
+  try {
+    // Se a URL do Web App do Apps Script estiver configurada, envia via POST
+    if (CONFIG.WEB_APP_URL && CONFIG.WEB_APP_URL.startsWith('http')) {
+      const response = await fetch(CONFIG.WEB_APP_URL, {
+        method: 'POST',
+        mode: 'no-cors', // Apps Script standard CORS handling
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      // Em modo no-cors o fetch é bem-sucedido se a requisição alcançar o Apps Script
+    } else {
+      // Simulação para desenvolvimento local caso o Apps Script ainda não esteja implantado
+      await new Promise(resolve => setTimeout(resolve, 800));
+    }
+
+    // Salva o registro localmente para evitar duplo voto pelo mesmo navegador
+    try {
+      localStorage.setItem(CONFIG.STORAGE_KEY_VOTE, JSON.stringify({
+        email: email,
+        birdId: bird.id,
+        birdName: bird.name,
+        date: new Date().toISOString()
+      }));
+    } catch(err) {}
+
+    btn.classList.remove('is-loading');
+    openSuccessModal(bird, email);
+
+    // Desabilita o formulário após a confirmação
+    emailInput.disabled = true;
+    btn.textContent = 'Voto Registrado';
+
+  } catch (error) {
+    console.error('Erro ao enviar voto:', error);
+    btn.classList.remove('is-loading');
+    btn.disabled = false;
+    showToast('Ocorreu uma falha ao registrar o voto. Por favor, tente novamente.', 'error');
+  }
+}
+
+// ============================================================
+// HELPER DE NOTIFICAÇÃO TOAST
+// ============================================================
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = `toast toast--${type}`;
+  toast.textContent = message;
+
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(10px)';
+    toast.style.transition = 'all 0.3s ease';
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}

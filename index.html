@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Votação Ave Símbolo de São Sebastião — Festival Entre Asas</title>
+  <meta name="description" content="Eleição oficial da Ave Símbolo de São Sebastião promovida pela Secretaria de Turismo e pelo Festival de Observação de Aves Entre Asas.">
+  
+  <!-- Fontes Google -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Top Announcement Bar -->
+  <aside class="top-bar">
+    <div class="container top-bar__content">
+      <span class="badge-status">Votação Oficial Aberta</span>
+      <span class="top-bar__info">Secretaria de Turismo &bull; Prefeitura de São Sebastião</span>
+    </div>
+  </aside>
+
+  <!-- Hero Header -->
+  <header class="hero">
+    <div class="container hero__container">
+      <div class="hero__brand">
+        <img src="assets/logo-entre-asas.png" alt="Logo Entre Asas - Festival de Observação de Aves de São Sebastião-SP" class="hero__logo">
+      </div>
+      <h1 class="hero__title">Escolha a Ave Símbolo de São Sebastião</h1>
+      <p class="hero__subtitle">
+        Conheça as seis espécies candidatas que representam a extraordinária biodiversidade da nossa Mata Atlântica e do litoral caiçara. Leia a história de cada ave e confirme o seu voto.
+      </p>
+      <div class="hero__rules-badge">
+        <span>Regra de votação: 1 voto por cidadão (validação por e-mail)</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Section: Bird Selection Grid -->
+  <main class="container main-content">
+    <section class="section-header">
+      <h2 class="section-title">Espécies Candidatas</h2>
+      <p class="section-subtitle">Clique em <strong>Conhecer a espécie</strong> para ver detalhes completos ou em <strong>Votar nesta ave</strong> para selecioná-la.</p>
+    </section>
+
+    <!-- Grid of Birds -->
+    <div class="birds-grid" id="birdsGrid">
+      <!-- Inserido dinamicamente via app.js -->
+    </div>
+
+    <!-- Voter Confirmation Section -->
+    <section class="voting-section" id="votingSection">
+      <div class="voting-card">
+        <div class="voting-card__header">
+          <h3 class="voting-card__title">Confirmação do Voto</h3>
+          <p class="voting-card__desc">Verifique a espécie selecionada e informe o seu e-mail para validar o seu voto.</p>
+        </div>
+
+        <form id="voteForm" class="vote-form" novalidate>
+          <div class="selected-bird-preview" id="selectedBirdPreview">
+            <div class="selected-bird-preview__empty">
+              <span class="preview-icon">&bull;</span>
+              <p>Nenhuma ave selecionada no momento. Escolha uma das opções acima para continuar.</p>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="voterEmail" class="form-label">Seu E-mail Institucional ou Pessoal</label>
+            <input 
+              type="email" 
+              id="voterEmail" 
+              name="email" 
+              class="form-input" 
+              placeholder="exemplo@email.com" 
+              required
+              autocomplete="email"
+            >
+            <span class="form-helper">Utilizado estritamente para garantir a regra de um único voto por pessoa.</span>
+            <div class="form-error" id="emailError"></div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="btnSubmitVote" disabled>
+              <span class="btn-text">Confirmar meu Voto</span>
+              <span class="spinner" id="submitSpinner"></span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <!-- Detail Modal for Bird Information -->
+  <div class="modal-overlay" id="birdModal" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <button class="modal-close" id="modalCloseBtn" aria-label="Fechar detalhes">&times;</button>
+      
+      <div class="modal-media">
+        <img src="" alt="" class="modal-image" id="modalImg">
+        <span class="modal-badge" id="modalCategory">Mata Atlântica</span>
+      </div>
+
+      <div class="modal-body">
+        <header class="modal-header">
+          <h3 class="modal-title" id="modalTitle">Nome da Ave</h3>
+          <p class="modal-scientific" id="modalScientific">Nome Científico</p>
+        </header>
+
+        <div class="modal-text-content">
+          <h4 class="modal-section-title">Por que votar nesta espécie?</h4>
+          <div class="modal-description" id="modalDescription">
+            <!-- Descrição completa inserida via JavaScript -->
+          </div>
+        </div>
+
+        <footer class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="modalCloseAction">Fechar</button>
+          <button type="button" class="btn btn-primary" id="modalSelectAction">Escolher e Votar Nesta Ave</button>
+        </footer>
+      </div>
+    </div>
+  </div>
+
+  <!-- Success Modal -->
+  <div class="modal-overlay" id="successModal" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-card modal-card--success">
+      <div class="success-content">
+        <div class="success-icon-wrap">
+          <svg class="success-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+        </div>
+        <h3 class="success-title">Voto Registrado com Sucesso!</h3>
+        <p class="success-message" id="successMessageText">
+          O seu voto para a eleição da Ave Símbolo de São Sebastião foi gravado oficialmente no sistema.
+        </p>
+        <div class="success-bird-card" id="successBirdCard">
+          <!-- Resumo da ave votada -->
+        </div>
+        <p class="success-subtext">Agradecemos sua participação na valorização da nossa fauna e cultura caiçara.</p>
+        <button type="button" class="btn btn-primary" id="btnSuccessClose">Concluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer__container">
+      <div class="footer__text">
+        <p><strong>Festival de Observação de Aves Entre Asas</strong> &bull; Edição São Sebastião-SP</p>
+        <p class="footer__meta">Realização: Secretaria de Turismo de São Sebastião &bull; Preservação e Educação Ambiental</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
