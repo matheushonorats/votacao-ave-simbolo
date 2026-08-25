@@ -175,15 +175,20 @@ function initSpreadsheetStatusSync() {
   }
 }
 
+function isVotingClosed() {
+  const status = String(CONFIG.STATUS_VOTACAO || '').toUpperCase().trim();
+  return status === 'ENCERRADA' || status === 'ENCERRADO' || status === 'FECHADA' || status === 'FECHADO';
+}
+
 function applyVotingStatus() {
-  const isClosed = CONFIG.STATUS_VOTACAO === 'ENCERRADA';
+  const closed = isVotingClosed();
   const badge = document.getElementById('headerStatusBadge');
   const votingCard = document.getElementById('votingCard');
   const closedCard = document.getElementById('votingClosedCard');
 
-  if (isClosed) {
+  if (closed) {
     if (badge) {
-      badge.textContent = 'Votação Encerrada';
+      badge.textContent = 'Votação Fechada';
       badge.classList.add('badge-status--closed');
     }
     if (votingCard) votingCard.style.display = 'none';
@@ -375,7 +380,6 @@ function toggleBirdDetails(birdId) {
     infoBtn.textContent = !isExpanded ? 'Recolher' : 'Conhecer';
   }
 
-  // Notifica o iframe para recalcular altura
   setTimeout(sendIframeHeight, 100);
 
   if (!isExpanded) {
@@ -387,7 +391,6 @@ function showcaseExpandBird(birdId) {
   const card = document.getElementById(`card-${birdId}`);
   if (!card) return;
 
-  // Garante que o card esteja expandido
   if (!card.classList.contains('is-expanded')) {
     toggleBirdDetails(birdId);
   }
@@ -419,8 +422,8 @@ function initEventListeners() {
 // SELEÇÃO DA AVE
 // ============================================================
 function selectBird(birdId, scrollToVote = false) {
-  if (CONFIG.STATUS_VOTACAO === 'ENCERRADA') {
-    showInlineAlert('Votação Encerrada', 'A votação oficial está encerrada.');
+  if (isVotingClosed()) {
+    showInlineAlert('Votação Fechada', 'A votação oficial está fechada no momento.');
     return;
   }
 
@@ -606,7 +609,7 @@ function validateEmailInput() {
 }
 
 function updateSubmitButtonState() {
-  if (CONFIG.STATUS_VOTACAO === 'ENCERRADA') return;
+  if (isVotingClosed()) return;
 
   const btn = document.getElementById('btnSubmitVote');
   const emailInput = document.getElementById('voterEmail');
@@ -624,8 +627,8 @@ function updateSubmitButtonState() {
 async function handleVoteSubmit(e) {
   e.preventDefault();
 
-  if (CONFIG.STATUS_VOTACAO === 'ENCERRADA') {
-    showInlineAlert('Votação Encerrada', 'O período oficial de votação foi finalizado.');
+  if (isVotingClosed()) {
+    showInlineAlert('Votação Fechada', 'A votação oficial está fechada no momento.');
     return;
   }
 
