@@ -16,7 +16,10 @@
   <!-- Top Announcement Bar -->
   <aside class="top-bar">
     <div class="container top-bar__content">
-      <span class="badge-status" id="headerStatusBadge">Votação Oficial Aberta</span>
+      <div class="top-bar__left">
+        <span class="badge-status" id="headerStatusBadge">Votação Oficial Aberta</span>
+        <span class="top-bar__deadline">Votação aberta até <strong>12 de outubro de 2026</strong></span>
+      </div>
       <span class="top-bar__info">Secretaria de Turismo &bull; Prefeitura de São Sebastião</span>
     </div>
   </aside>
@@ -31,6 +34,13 @@
       <p class="hero__subtitle">
         Conheça as seis espécies candidatas que representam a extraordinária biodiversidade da nossa Mata Atlântica e do litoral caiçara. Leia a história de cada ave e confirme o seu voto.
       </p>
+      <div class="hero__deadline-badge">
+        <svg class="hero__deadline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <span>Votação aberta e válida até <strong>12 de outubro de 2026</strong></span>
+      </div>
     </div>
   </header>
 
@@ -65,6 +75,13 @@
         <div class="voting-card__header">
           <h3 class="voting-card__title">Confirmação do Voto</h3>
           <p class="voting-card__desc">Verifique a espécie selecionada e informe o seu e-mail para validar o seu voto.</p>
+          <div class="voting-card__deadline-tag">
+            <svg class="deadline-icon-mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span>Votação válida até <strong>12 de outubro de 2026</strong></span>
+          </div>
         </div>
 
         <!-- Banner de Alerta Inline de Erro / Duplicidade (100% Visível no Campo de Visão) -->

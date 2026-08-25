@@ -95,7 +95,25 @@ body {
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
+}
+
+.top-bar__left {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.top-bar__deadline {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.75rem;
+  letter-spacing: 0.01em;
+}
+
+.top-bar__deadline strong {
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .badge-status {
@@ -159,6 +177,33 @@ body {
   color: var(--color-text-muted);
   max-width: 620px;
   line-height: 1.5;
+  margin-bottom: 14px;
+}
+
+.hero__deadline-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #ffffff;
+  color: var(--color-primary);
+  border: 1.5px solid var(--color-border);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  box-shadow: var(--shadow-sm);
+}
+
+.hero__deadline-icon {
+  width: 15px;
+  height: 15px;
+  color: var(--color-accent);
+  flex-shrink: 0;
+}
+
+.hero__deadline-badge strong {
+  color: var(--color-accent);
+  font-weight: 700;
 }
 
 /* Cinematic Carousel / Ken Burns Showcase Banner */
@@ -688,6 +733,31 @@ body {
 .voting-card__desc {
   font-size: 0.875rem;
   color: var(--color-text-muted);
+  margin-bottom: 8px;
+}
+
+.voting-card__deadline-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background-color: var(--color-sand);
+  border: 1px solid var(--color-border);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  color: var(--color-primary);
+  margin-top: 4px;
+}
+
+.voting-card__deadline-tag strong {
+  color: var(--color-accent);
+}
+
+.deadline-icon-mini {
+  width: 13px;
+  height: 13px;
+  color: var(--color-accent);
+  flex-shrink: 0;
 }
 
 /* Banner de Alerta Inline de Erro / Duplicidade */
