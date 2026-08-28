@@ -89,6 +89,11 @@
     .dash-header__logo {
       height: 42px;
       width: auto;
+      background: #ffffff;
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      display: block;
     }
 
     .dash-header__titles {
@@ -561,7 +566,7 @@
         <button type="button" class="btn btn-light" onclick="window.print()">
           <span>Imprimir / PDF</span>
         </button>
-        <a href="?page=votacao" class="btn btn-accent" target="_blank">
+        <a href="index.html" class="btn btn-accent" target="_blank">
           <span>Ver Votação Pública &rarr;</span>
         </a>
       </div>
@@ -733,7 +738,7 @@
           const vice = ranking[1];
           const diff = lider.votes - vice.votes;
           document.getElementById('kpiViceNome').textContent = vice.name;
-          document.getElementById('kpiViceStats').textContent = `${vice.votes} votos (${vice.percentage}%) &bull; -${diff} do líder`;
+          document.getElementById('kpiViceStats').textContent = `${vice.votes} votos (${vice.percentage}%) • -${diff} do líder`;
         }
       }
 
