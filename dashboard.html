@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard de Resultados — Ave Símbolo de São Sebastião</title>
+  
+  <!-- Fontes Google -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --font-serif: 'Cinzel', serif;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+      --color-primary: #0e2a38;
+      --color-primary-light: #1b4353;
+      --color-accent: #2d6a4f;
+      --color-accent-hover: #1b4332;
+      --color-gold: #c67d0a;
+      --color-gold-light: #fef8ee;
+      --color-gold-border: #f0deb8;
+      --color-sand: #f8f6f0;
+      
+      --color-bg: #f5f4ef;
+      --color-surface: #ffffff;
+      --color-border: #e6e2d8;
+      --color-border-hover: #c4beaf;
+      
+      --color-text-main: #182228;
+      --color-text-muted: #5c6870;
+      --color-text-light: #88959e;
+
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 2px 6px rgba(14, 42, 56, 0.04);
+      --shadow-md: 0 8px 24px rgba(14, 42, 56, 0.08);
+      --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--color-bg);
+      color: var(--color-text-main);
+      line-height: 1.5;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+
+    /* Top Navigation / App Header */
+    .dash-header {
+      background-color: var(--color-primary);
+      color: #ffffff;
+      padding: 16px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .dash-header__content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .dash-header__brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .dash-header__logo {
+      height: 42px;
+      width: auto;
+    }
+
+    .dash-header__titles {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .dash-header__title {
+      font-family: var(--font-serif);
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      color: #ffffff;
+    }
+
+    .dash-header__subtitle {
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.75);
+    }
+
+    .dash-header__actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: var(--transition);
+      text-decoration: none;
+      font-family: var(--font-sans);
+    }
+
+    .btn-light {
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .btn-light:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .btn-accent {
+      background: var(--color-accent);
+      color: #ffffff;
+    }
+
+    .btn-accent:hover {
+      background: var(--color-accent-hover);
+    }
+
+    /* Main Dashboard Layout */
+    .dash-main {
+      padding: 24px 0 48px;
+    }
+
+    /* Status & Sync Bar */
+    .sync-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 10px 16px;
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      font-size: 0.8125rem;
+      color: var(--color-text-muted);
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .sync-bar__live {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--color-accent);
+      font-weight: 600;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--color-accent);
+      border-radius: 50%;
+      display: inline-block;
+      box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.2);
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(45, 106, 79, 0.4); }
+      70% { box-shadow: 0 0 0 6px rgba(45, 106, 79, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(45, 106, 79, 0); }
+    }
+
+    /* KPI Summary Cards Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 992px) {
+      .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 540px) {
+      .kpi-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .kpi-card {
+      background: #ffffff;
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .kpi-card--highlight {
+      border-color: var(--color-gold-border);
+      background: linear-gradient(180deg, #ffffff 0%, var(--color-gold-light) 100%);
+    }
+
+    .kpi-card__label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--color-text-muted);
+      margin-bottom: 8px;
+    }
+
+    .kpi-card__val {
+      font-family: var(--font-serif);
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--color-primary);
+      line-height: 1.1;
+      margin-bottom: 4px;
+    }
+
+    .kpi-card__sub {
+      font-size: 0.8125rem;
+      color: var(--color-text-muted);
+      margin-top: auto;
+    }
+
+    .kpi-card__badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .badge-open {
+      background: #e8f5e9;
+      color: #1b5e20;
+    }
+
+    .badge-closed {
+      background: #f5f5f5;
+      color: #616161;
+    }
+
+    /* 2 Columns Section */
+    .dash-layout {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 900px) {
+      .dash-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .dash-panel {
+      background: #ffffff;
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 20px;
+    }
+
+    .dash-panel__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .dash-panel__title {
+      font-family: var(--font-serif);
+      font-size: 1.125rem;
+      color: var(--color-primary);
+    }
+
+    .dash-panel__badge {
+      font-size: 0.75rem;
+      background: var(--color-sand);
+      color: var(--color-text-muted);
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--color-border);
+    }
+
+    /* Ranking Item Cards */
+    .ranking-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .ranking-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px;
+      background: var(--color-sand);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      transition: var(--transition);
+      position: relative;
+    }
+
+    .ranking-item:hover {
+      background: #ffffff;
+      border-color: var(--color-border-hover);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .ranking-item--first {
+      background: var(--color-gold-light);
+      border-color: var(--color-gold-border);
+      box-shadow: 0 2px 8px rgba(198, 125, 10, 0.08);
+    }
+
+    .ranking-pos {
+      width: 32px;
+      height: 32px;
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-serif);
+      font-size: 0.9375rem;
+      font-weight: 700;
+      color: var(--color-primary);
+      flex-shrink: 0;
+    }
+
+    .ranking-item--first .ranking-pos {
+      background: var(--color-gold);
+      color: #ffffff;
+      border-color: var(--color-gold);
+    }
+
+    .ranking-thumb {
+      width: 52px;
+      height: 52px;
+      border-radius: var(--radius-sm);
+      object-fit: cover;
+      border: 1px solid var(--color-border);
+      flex-shrink: 0;
+    }
+
+    .ranking-info {
+      flex-grow: 1;
+      min-width: 0;
+    }
+
+    .ranking-name {
+      font-family: var(--font-serif);
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ranking-scientific {
+      font-size: 0.75rem;
+      font-style: italic;
+      color: var(--color-text-muted);
+      margin-bottom: 6px;
+    }
+
+    .ranking-bar-wrap {
+      width: 100%;
+      height: 7px;
+      background: #e9ecef;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .ranking-bar {
+      height: 100%;
+      background: var(--color-accent);
+      border-radius: 999px;
+      transition: width 0.6s ease;
+    }
+
+    .ranking-item--first .ranking-bar {
+      background: var(--color-gold);
+    }
+
+    .ranking-stats {
+      text-align: right;
+      flex-shrink: 0;
+      min-width: 75px;
+    }
+
+    .ranking-percent {
+      font-family: var(--font-serif);
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--color-primary);
+      line-height: 1.1;
+    }
+
+    .ranking-votes {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+    }
+
+    /* Feed de Votos Recentes */
+    .recent-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .recent-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: var(--color-sand);
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+    }
+
+    .recent-item__bird {
+      font-weight: 600;
+      color: var(--color-primary);
+    }
+
+    .recent-item__meta {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      text-align: right;
+    }
+
+    /* Bar Distribution Chart (Pure HTML/CSS) */
+    .chart-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .chart-bar-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .chart-bar-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8125rem;
+      font-weight: 500;
+    }
+
+    .chart-bar-track {
+      width: 100%;
+      height: 10px;
+      background: #e9ecef;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .chart-bar-fill {
+      height: 100%;
+      background: var(--color-primary-light);
+      border-radius: 999px;
+      transition: width 0.5s ease;
+    }
+
+    /* Spinner */
+    .spinner {
+      display: none;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: #ffffff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    .is-loading .spinner {
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Print View */
+    @media print {
+      .dash-header__actions, .sync-bar__btn, .btn {
+        display: none !important;
+      }
+      body {
+        background: #ffffff;
+      }
+      .dash-panel, .kpi-card {
+        box-shadow: none;
+        border-color: #cccccc;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- App Header -->
+  <header class="dash-header">
+    <div class="container dash-header__content">
+      <div class="dash-header__brand">
+        <img src="https://raw.githubusercontent.com/matheushonorats/votacao-ave-simbolo/main/assets/logo-entre-asas.png" alt="Entre Asas" class="dash-header__logo">
+        <div class="dash-header__titles">
+          <h1 class="dash-header__title">Apuração &amp; Resultados Oficiais</h1>
+          <span class="dash-header__subtitle">Eleição da Ave Símbolo de São Sebastião &bull; Festival Entre Asas</span>
+        </div>
+      </div>
+      <div class="dash-header__actions">
+        <button type="button" class="btn btn-light" id="btnRefresh" onclick="carregarResultados()">
+          <span class="spinner" id="refreshSpinner"></span>
+          <span>Atualizar Dados</span>
+        </button>
+        <button type="button" class="btn btn-light" onclick="window.print()">
+          <span>Imprimir / PDF</span>
+        </button>
+        <a href="index.html" class="btn btn-accent" target="_blank">
+          <span>Ver Votação Pública &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container dash-main">
+
+    <!-- Status & Sync Info -->
+    <div class="sync-bar">
+      <div class="sync-bar__live">
+        <span class="live-dot"></span>
+        <span id="txtStatusConexao">Sincronização em tempo real ativa</span>
+      </div>
+      <div class="sync-bar__info">
+        Última leitura: <strong id="lblUltimaAtualizacao">Carregando...</strong> &bull; Auto-refresh: <strong>30s</strong>
+      </div>
+    </div>
+
+    <!-- 4 KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <span class="kpi-card__label">Total de Votos Válidos</span>
+        <div class="kpi-card__val" id="kpiTotalVotos">0</div>
+        <span class="kpi-card__sub" id="kpiTotalSub">Auditado por e-mail único</span>
+      </div>
+
+      <div class="kpi-card kpi-card--highlight">
+        <span class="kpi-card__label">Ave Líder (1º Lugar)</span>
+        <div class="kpi-card__val" style="font-size:1.4rem; color:var(--color-gold);" id="kpiLiderNome">—</div>
+        <span class="kpi-card__sub" id="kpiLiderStats">0 votos (0.0%)</span>
+      </div>
+
+      <div class="kpi-card">
+        <span class="kpi-card__label">Vice-Líder (2º Lugar)</span>
+        <div class="kpi-card__val" style="font-size:1.4rem;" id="kpiViceNome">—</div>
+        <span class="kpi-card__sub" id="kpiViceStats">0 votos (0.0%)</span>
+      </div>
+
+      <div class="kpi-card">
+        <span class="kpi-card__label">Status da Votação</span>
+        <div class="kpi-card__val" style="font-size:1.4rem;" id="kpiStatus">
+          <span class="kpi-card__badge badge-open" id="kpiBadgeStatus">ABERTA</span>
+        </div>
+        <span class="kpi-card__sub">Válida até 12 de outubro de 2026</span>
+      </div>
+    </div>
+
+    <!-- 2 Columns Layout -->
+    <div class="dash-layout">
+
+      <!-- Left Column: Ranking List -->
+      <section class="dash-panel">
+        <div class="dash-panel__header">
+          <h2 class="dash-panel__title">Ranking Geral de Votos</h2>
+          <span class="dash-panel__badge">6 Espécies Candidatas</span>
+        </div>
+
+        <div class="ranking-list" id="rankingListContainer">
+          <div style="text-align:center; padding:30px 0; color:var(--color-text-muted);">
+            Carregando apuração da planilha...
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Distribution & Recents -->
+      <div>
+        <!-- Distribution Chart -->
+        <section class="dash-panel">
+          <div class="dash-panel__header">
+            <h2 class="dash-panel__title">Distribuição Percentual</h2>
+            <span class="dash-panel__badge" id="chartTotalBadge">100% dos votos</span>
+          </div>
+          <div class="chart-bars" id="chartBarsContainer"></div>
+        </section>
+
+        <!-- Recent Activity Feed -->
+        <section class="dash-panel">
+          <div class="dash-panel__header">
+            <h2 class="dash-panel__title">Últimos Votos Registrados</h2>
+            <span class="dash-panel__badge">Tempo Real (LGPD)</span>
+          </div>
+          <div class="recent-list" id="recentListContainer">
+            <div style="text-align:center; padding:12px 0; color:var(--color-text-muted); font-size:0.8125rem;">
+              Aguardando votos...
+            </div>
+          </div>
+        </section>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    let autoRefreshTimer = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      carregarResultados();
+      autoRefreshTimer = setInterval(carregarResultados, 30000);
+    });
+
+    function carregarResultados() {
+      const btn = document.getElementById('btnRefresh');
+      if (btn) btn.classList.add('is-loading');
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler((res) => {
+            if (btn) btn.classList.remove('is-loading');
+            if (res && res.ok) {
+              renderizarDashboard(res);
+            } else {
+              document.getElementById('txtStatusConexao').textContent = 'Erro ao carregar dados: ' + (res.error || '');
+            }
+          })
+          .withFailureHandler((err) => {
+            if (btn) btn.classList.remove('is-loading');
+            document.getElementById('txtStatusConexao').textContent = 'Falha na conexão: ' + err.message;
+          })
+          .obterResultadosDashboard();
+      } else {
+        // Mock data para testes fora do Google Apps Script
+        setTimeout(() => {
+          if (btn) btn.classList.remove('is-loading');
+          renderizarDashboard({
+            ok: true,
+            statusVotacao: 'ABERTA',
+            totalVotos: 148,
+            ultimaAtualizacao: new Date().toLocaleTimeString('pt-BR'),
+            ranking: [
+              { id: 'pintadinho', name: 'Pintadinho', scientific: 'Drymophila squamata', tag: 'Sub-bosque e Bambuzais', image: 'https://raw.githubusercontent.com/matheushonorats/votacao-ave-simbolo/main/assets/pintadinho.jpg', votes: 46, percentage: 31.1 },
+              { id: 'tucano-de-bico-preto', name: 'Tucano-de-bico-preto', scientific: 'Ramphastos vitellinus', tag: 'Copas e Encostas', image: 'https://raw.githubusercontent.com/matheushonorats/votacao-ave-simbolo/main/assets/tucano-de-bico-preto.jpg', votes: 34, percentage: 23.0 },
+              { id: 'surucua-de-barriga-amarela', name: 'Surucuá-de-barriga-amarela', scientific: 'Trogon viridis', tag: 'Interior da Mata', image: 'https://raw.githubusercontent.com/matheushonorats/votacao-ave-simbolo/main/assets/surucua-de-barriga-amarela.jpg', votes: 27, percentage: 18.2 },
+              { id: 'beija-flor-rajado', name: 'Beija-flor-rajado', scientific: 'Ramphodon naevius', tag: 'Mata e Áreas Verdes', image: 'https://raw.githubusercontent.com/matheushonorats/votacao-ave-simbolo/main/assets/beija-flor-rajado.jpg', votes: 19, percentage: 12.8 },
+              { id: 'garca-branca-grande', name: 'Garça-branca-grande', scientific: 'Ardea alba', tag: 'Rios e Manguezais', image: 'https://raw.githubusercontent.com/matheushonorats/votacao-ave-simbolo/main/assets/garca-branca-grande.jpg', votes: 14, percentage: 9.5 },
+              { id: 'jao-do-sul', name: 'Jaó-do-sul', scientific: 'Crypturellus noctivagus', tag: 'Solo da Floresta', image: 'https://raw.githubusercontent.com/matheushonorats/votacao-ave-simbolo/main/assets/jao-do-sul.jpg', votes: 8, percentage: 5.4 }
+            ],
+            ultimosVotos: [
+              { dataHora: '2026-08-28 12:30:15', emailMascarado: 'mat***@gmail.com', aveNome: 'Pintadinho' },
+              { dataHora: '2026-08-28 12:28:40', emailMascarado: 'car***@saosebastiao.sp.gov.br', aveNome: 'Tucano-de-bico-preto' },
+              { dataHora: '2026-08-28 12:25:10', emailMascarado: 'ana***@uol.com.br', aveNome: 'Surucuá-de-barriga-amarela' }
+            ]
+          });
+        }, 500);
+      }
+    }
+
+    function renderizarDashboard(data) {
+      document.getElementById('lblUltimaAtualizacao').textContent = data.ultimaAtualizacao || 'Agora';
+      document.getElementById('kpiTotalVotos').textContent = data.totalVotos.toLocaleString('pt-BR');
+
+      // Status Badge
+      const isClosed = data.statusVotacao === 'ENCERRADA' || data.statusVotacao === 'FECHADA';
+      const badgeStatus = document.getElementById('kpiBadgeStatus');
+      if (badgeStatus) {
+        badgeStatus.textContent = isClosed ? 'FECHADA' : 'ABERTA';
+        badgeStatus.className = isClosed ? 'kpi-card__badge badge-closed' : 'kpi-card__badge badge-open';
+      }
+
+      // Ranking & KPIs
+      const ranking = data.ranking || [];
+      if (ranking.length > 0) {
+        const lider = ranking[0];
+        document.getElementById('kpiLiderNome').textContent = lider.name;
+        document.getElementById('kpiLiderStats').textContent = `${lider.votes} votos (${lider.percentage}%)`;
+
+        if (ranking.length > 1) {
+          const vice = ranking[1];
+          const diff = lider.votes - vice.votes;
+          document.getElementById('kpiViceNome').textContent = vice.name;
+          document.getElementById('kpiViceStats').textContent = `${vice.votes} votos (${vice.percentage}%) &bull; -${diff} do líder`;
+        }
+      }
+
+      // Render Ranking Cards
+      const rankingContainer = document.getElementById('rankingListContainer');
+      if (rankingContainer && ranking.length > 0) {
+        rankingContainer.innerHTML = ranking.map((item, idx) => `
+          <div class="ranking-item ${idx === 0 ? 'ranking-item--first' : ''}">
+            <div class="ranking-pos">${idx + 1}º</div>
+            <img src="${item.image}" alt="${item.name}" class="ranking-thumb">
+            <div class="ranking-info">
+              <div class="ranking-name">${item.name}</div>
+              <div class="ranking-scientific">${item.scientific} &bull; <span style="color:var(--color-accent); font-style:normal; font-weight:600;">${item.tag}</span></div>
+              <div class="ranking-bar-wrap">
+                <div class="ranking-bar" style="width: ${item.percentage}%;"></div>
+              </div>
+            </div>
+            <div class="ranking-stats">
+              <div class="ranking-percent">${item.percentage}%</div>
+              <div class="ranking-votes">${item.votes} ${item.votes === 1 ? 'voto' : 'votos'}</div>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Render Bars Chart
+      const chartContainer = document.getElementById('chartBarsContainer');
+      if (chartContainer && ranking.length > 0) {
+        chartContainer.innerHTML = ranking.map(item => `
+          <div class="chart-bar-row">
+            <div class="chart-bar-header">
+              <span>${item.name}</span>
+              <span><strong>${item.percentage}%</strong> (${item.votes})</span>
+            </div>
+            <div class="chart-bar-track">
+              <div class="chart-bar-fill" style="width: ${item.percentage}%;"></div>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Render Recent Votes Feed
+      const recentContainer = document.getElementById('recentListContainer');
+      const ultimos = data.ultimosVotos || [];
+      if (recentContainer) {
+        if (ultimos.length === 0) {
+          recentContainer.innerHTML = '<div style="text-align:center; padding:12px 0; color:var(--color-text-muted); font-size:0.8125rem;">Nenhum voto registrado até o momento.</div>';
+        } else {
+          recentContainer.innerHTML = ultimos.map(v => `
+            <div class="recent-item">
+              <div>
+                <div class="recent-item__bird">${v.aveNome}</div>
+                <div style="font-size:0.75rem; color:var(--color-text-muted);">${v.emailMascarado}</div>
+              </div>
+              <div class="recent-item__meta">${v.dataHora.substring(11, 19) || v.dataHora}</div>
+            </div>
+          `).join('');
+        }
+      }
+    }
+  </script>
+</body>
+</html>
