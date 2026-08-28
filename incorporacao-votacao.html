@@ -1,0 +1,51 @@
+<!-- Início da Incorporação — Votação Ave Símbolo de São Sebastião -->
+<div style="width: 100%; max-width: 1200px; margin: 0 auto;">
+  <iframe
+    id="iframeVotacaoAveSimbolo"
+    src="https://script.google.com/macros/s/AKfycbyL9UkIQg9rMGb915-kHqlB8tAFJ6mV1QmFGNQefzu744EoSh0HGF2c1NgADCb9U8Xo/exec"
+    title="Votação Oficial Ave Símbolo de São Sebastião — Festival Entre Asas"
+    scrolling="no"
+    style="width: 100%; height: 2600px; border: 0; overflow: hidden; display: block;"
+  ></iframe>
+</div>
+
+<script>
+  (function () {
+    var iframe = document.getElementById('iframeVotacaoAveSimbolo');
+    if (!iframe) return;
+
+    function isAllowedGoogleAppsScriptOrigin(origin) {
+      try {
+        var url = new URL(origin);
+        var hostname = url.hostname;
+
+        return url.protocol === 'https:' && (
+          hostname === 'script.google.com' ||
+          hostname === 'script.googleusercontent.com' ||
+          hostname.endsWith('-script.googleusercontent.com')
+        );
+      } catch (error) {
+        return false;
+      }
+    }
+
+    window.addEventListener('message', function (event) {
+      if (!isAllowedGoogleAppsScriptOrigin(event.origin)) return;
+      if (!event.data || event.data.votacaoAveSimbolo !== true) return;
+
+      if (Number.isFinite(event.data.height)) {
+        var height = Math.ceil(Math.max(800, Math.min(event.data.height, 20000)));
+        iframe.style.height = height + 'px';
+      }
+
+      if (event.data.action === 'scrollTo' && Number.isFinite(event.data.top)) {
+        var iframeTop = window.scrollY + iframe.getBoundingClientRect().top;
+        window.scrollTo({
+          top: Math.max(0, iframeTop + event.data.top - 40),
+          behavior: 'smooth'
+        });
+      }
+    });
+  })();
+</script>
+<!-- Fim da Incorporação -->

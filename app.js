@@ -116,6 +116,8 @@ let currentSlideIndex = 0;
 let showcaseTimer = null;
 let isShowcasePaused = false;
 let _lastSentHeight = 0;
+let _heightSyncTimer = null;
+let _heightObserver = null;
 
 function shuffleBirds(array) {
   for (let i = array.length - 1; i > 0; i--) {
@@ -135,30 +137,49 @@ document.addEventListener('DOMContentLoaded', () => {
   fetchUserIp();
   initSpreadsheetStatusSync();
 
-  setInterval(sendIframeHeight, 500);
-  window.addEventListener('resize', sendIframeHeight);
+  initIframeAutoHeight();
 });
+
+function postMessageToHost(message) {
+  const hostWindow = window.top !== window ? window.top : window.parent;
+
+  if (hostWindow && hostWindow !== window) {
+    hostWindow.postMessage({ votacaoAveSimbolo: true, ...message }, '*');
+  }
+}
+
+function scheduleIframeHeightSync() {
+  window.clearTimeout(_heightSyncTimer);
+  _heightSyncTimer = window.setTimeout(sendIframeHeight, 50);
+}
+
+function initIframeAutoHeight() {
+  sendIframeHeight();
+  window.addEventListener('load', scheduleIframeHeightSync);
+  window.addEventListener('resize', scheduleIframeHeightSync);
+
+  if ('ResizeObserver' in window && document.body) {
+    _heightObserver = new ResizeObserver(scheduleIframeHeightSync);
+    _heightObserver.observe(document.body);
+  } else {
+    window.setInterval(sendIframeHeight, 500);
+  }
+}
 
 function sendIframeHeight() {
   try {
-    if (window.parent && window.parent !== window) {
-      const h = Math.max(
-        document.body ? document.body.scrollHeight : 0,
-        document.documentElement ? document.documentElement.scrollHeight : 0
-      );
-      if (h > 0 && Math.abs(h - _lastSentHeight) > 5) {
-        _lastSentHeight = h;
-        window.parent.postMessage({ votacaoAveSimbolo: true, height: h }, '*');
-      }
+    const h = document.body ? Math.ceil(document.body.getBoundingClientRect().height) : 0;
+
+    if (h > 0 && Math.abs(h - _lastSentHeight) > 1) {
+      _lastSentHeight = h;
+      postMessageToHost({ height: h });
     }
   } catch (e) {}
 }
 
 function notifyParentToScroll(targetY) {
   try {
-    if (window.parent && window.parent !== window) {
-      window.parent.postMessage({ votacaoAveSimbolo: true, action: 'scrollTo', top: targetY || 0 }, '*');
-    }
+    postMessageToHost({ action: 'scrollTo', top: targetY || 0 });
   } catch (e) {}
 }
 
